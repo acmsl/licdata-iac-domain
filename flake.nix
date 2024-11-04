@@ -117,9 +117,6 @@
               inherit homepage pname pythonMajorMinorVersion pythonpackage
                 version;
               package = builtins.replaceStrings [ "." ] [ "/" ] pythonpackage;
-              licdataVersion = licdata.version;
-              pythonedaSharedArtifactShared =
-                pythoneda-shared-artifact-shared.version;
               pythonedaSharedPythonlangBanner =
                 pythoneda-shared-pythonlang-banner.version;
               pythonedaSharedPythonlangDomain =
@@ -165,10 +162,8 @@
 
             format = "pyproject";
 
-            nativeBuildInputs = with python.pkgs; [ pip poetry-core ] ++ [ pkgs.zip ];
+            nativeBuildInputs = with python.pkgs; [ pip poetry-core ];
             propagatedBuildInputs = with python.pkgs; [
-              licdata
-              pythoneda-shared-artifact-shared
               pythoneda-shared-pythonlang-banner
               pythoneda-shared-pythonlang-domain
               pythoneda-shared-pythonlang-infrastructure
@@ -181,7 +176,7 @@
 
             unpackPhase = ''
               cp -r ${src} .
-              sourceRoot=$(realpath iac)
+              sourceRoot=$(ls | grep -v env-vars)
               chmod +w $sourceRoot
               find $sourceRoot -type d -exec chmod 777 {} \;
               cp ${pyprojectTemplate} $sourceRoot/pyproject.toml
@@ -190,7 +185,7 @@
             '';
 
             postPatch = ''
-              substituteInPlace $sourceRoot/entrypoint.sh \
+              substituteInPlace /build/$sourceRoot/entrypoint.sh \
                 --replace "@SOURCE@" "$out/bin/${entrypoint}.sh" \
                 --replace "@PYTHONEDA_EXTRA_NAMESPACES@" "org" \
                 --replace "@PYTHONPATH@" "$PYTHONPATH" \
@@ -198,12 +193,12 @@
                 --replace "@PYTHONEDA_SHARED_PYTHONLANG_DOMAIN@" "${pythoneda-shared-pythonlang-domain}" \
                 --replace "@PACKAGE@" "$out/lib/python${pythonMajorMinorVersion}/site-packages" \
                 --replace "@ENTRYPOINT@" "$out/lib/python${pythonMajorMinorVersion}/site-packages/${package}/application/${entrypoint}.py" \
-                --replace "@PYTHON_ARGS@" "-Xfrozen_modules=off" \
+                --replace "@PYTHON_ARGS@" "" \
                 --replace "@BANNER@" "$out/bin/banner.sh"
             '';
 
             postInstall = ''
-              pushd $sourceRoot
+              pushd /build/$sourceRoot
               for f in $(find . -name '__init__.py'); do
                 if [[ ! -e $out/lib/python${pythonMajorMinorVersion}/site-packages/$f ]]; then
                   cp $f $out/lib/python${pythonMajorMinorVersion}/site-packages/$f;
@@ -212,9 +207,9 @@
               popd
               mkdir $out/dist $out/bin
               cp dist/${wheelName} $out/dist
-              cp $sourceRoot/entrypoint.sh $out/bin/${entrypoint}.sh
+              cp /build/$sourceRoot/entrypoint.sh $out/bin/${entrypoint}.sh
               chmod +x $out/bin/${entrypoint}.sh
-              cp -r ${licdata}/dist/rest.zip $sourceRoot/templates $out/lib/python${pythonMajorMinorVersion}/site-packages
+              cp -r ${licdata}/dist/rest.zip /build/$sourceRoot/templates $out/lib/python${pythonMajorMinorVersion}/site-packages
               echo '#!/usr/bin/env sh' > $out/bin/banner.sh
               echo "export PYTHONPATH=$PYTHONPATH" >> $out/bin/banner.sh
               echo "echo 'Running $out/bin/banner'" >> $out/bin/banner.sh

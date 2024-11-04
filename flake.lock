@@ -66,11 +66,11 @@
       },
       "locked": {
         "dir": "rest",
-        "lastModified": 1730734958,
-        "narHash": "sha256-d6QEa191Tp26djao7cA/Befv8+H7fv+gem+gzCFp2OE=",
+        "lastModified": 1730736724,
+        "narHash": "sha256-pR46C5Ngilkks4QqCqR2QzdYOETIY81PF1RjCJj9ve0=",
         "owner": "acmsl",
         "repo": "licdata",
-        "rev": "b2bef7f949e9895be241bc040c9a134cbbc6041c",
+        "rev": "378d24b49bd270ed61d6326903335ca75f695a2d",
         "type": "github"
       },
       "original": {
