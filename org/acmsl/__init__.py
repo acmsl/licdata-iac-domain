@@ -2,9 +2,9 @@
 """
 org/acmsl/__init__.py
 
-This file ensures org.acmsl is a namespace.
+This file ensures org.acmsl is a package.
 
-Copyright (C) 2024-today acm-sl's licdata-iac
+Copyright (C) 2024-today acm-sl's licdata
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 __path__ = __import__("pkgutil").extend_path(__path__, __name__)
+
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et
 # Local Variables:
 # mode: python

@@ -1,4 +1,4 @@
-# pyprojecttoml.template
+# iac/pyprojecttoml.template
 #
 # This file is the template for acmsl's licdata-iac
 #
@@ -26,6 +26,7 @@ homepage = "@homepage@"
 packages = [{include = "@package@"}]
 
 [tool.poetry.dependencies]
+licdata = "^@licdataVersion@"
 python = "^@pythonMajorMinorVersion@"
 pythoneda-shared-artifact-shared = "^@pythonedaSharedArtifactShared@"
 pythoneda-shared-pythonlang-banner = "^@pythonedaSharedPythonlangBanner@"
