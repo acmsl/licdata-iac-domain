@@ -29,6 +29,7 @@ from .dns_zone import DnsZone
 from .dns_record import DnsRecord
 from .blob_container import BlobContainer
 from .functions_package import FunctionsPackage
+from .functions_deployment_slot import FunctionsDeploymentSlot
 
 
 class PulumiAzureStack(PulumiStack):
@@ -64,6 +65,7 @@ class PulumiAzureStack(PulumiStack):
         self._dns_record = None
         self._blob_container = None
         self._functions_package = None
+        self._webapp_deployment_slot = None
 
     @classmethod
     def instantiate(cls):
@@ -155,6 +157,15 @@ class PulumiAzureStack(PulumiStack):
         """
         return self._functions_package
 
+    @property
+    def webapp_deployment_slot(self) -> FunctionsDeploymentSlot:
+        """
+        Retrieves the Azure Functions Deployment Slot.
+        :return: Such Functions Deployment Slot.
+        :rtype: org.acmsl.licdata.iac.infrastructure.azure.FunctionsDeploymentSlot
+        """
+        return self._webapp_deployment_slot
+
     def declare_infrastructure(self):
         """
         Creates the infrastructure.
@@ -162,13 +173,13 @@ class PulumiAzureStack(PulumiStack):
         self._resource_group = ResourceGroup(self.location)
         self._function_storage_account = FunctionStorageAccount(self._resource_group)
         self._app_service_plan = AppServicePlan(self._resource_group)
-        self._public_ip_address = PublicIpAddress(self._resource_group)
-        self._dns_zone = DnsZone(self._resource_group)
-        self._dns_record = DnsRecord(
-            self._public_ip_address,
-            self._dns_zone,
-            self._resource_group,
-        )
+        # self._public_ip_address = PublicIpAddress(self._resource_group)
+        # self._dns_zone = DnsZone(self._resource_group)
+        # self._dns_record = DnsRecord(
+        #    self._public_ip_address,
+        #    self._dns_zone,
+        #    self._resource_group,
+        # )
         self._blob_container = BlobContainer(
             self._function_storage_account, self._resource_group
         )
@@ -176,8 +187,14 @@ class PulumiAzureStack(PulumiStack):
             self._blob_container, self._function_storage_account, self._resource_group
         )
         self._function_app = FunctionApp(
-            self._function_storage_account, self._app_service_plan, self._resource_group
+            self._function_storage_account,
+            self._app_service_plan,
+            self._functions_package,
+            self._resource_group,
         )
+        # self._webapp_deployment_slot = FunctionsDeploymentSlot(
+        #     self._function_app, self._resource_group
+        # )
 
 
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et

@@ -19,11 +19,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from pythoneda.shared import BaseObject
 import pulumi
 import pulumi_azure_native
+from pulumi_azure_native.storage import list_storage_account_keys
+from pulumi import Output
 
 
-class FunctionApp:
+class FunctionApp(BaseObject):
     """
     Azure Function App for Licdata.
 
@@ -40,6 +43,7 @@ class FunctionApp:
         self,
         storageAccount: pulumi_azure_native.storage.StorageAccount,
         appServicePlan: pulumi_azure_native.web.AppServicePlan,
+        blob: pulumi_azure_native.storage.Blob,
         resourceGroup: pulumi_azure_native.resources.ResourceGroup,
     ):
         """
@@ -48,12 +52,14 @@ class FunctionApp:
         :type storageAccount: pulumi_azure_native.storage.StorageAccount
         :param appServicePlan: The AppServicePlan.
         :type appServicePlan: pulumi_azure_native.web.AppServicePlan
+        :param blob: The blob.
+        :type blob: pulumi_azure_native.storage.Blob
         :param resourceGroup: The ResourceGroup.
         :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
         """
         super().__init__()
         self._function_app = self.create_function_app(
-            "licenses", appServicePlan, storageAccount, resourceGroup
+            "licenses", appServicePlan, storageAccount, blob, resourceGroup
         )
         self._function_app.name.apply(lambda name: pulumi.export(f"function_app", name))
         self._function_app.default_host_name.apply(
@@ -74,6 +80,7 @@ class FunctionApp:
         functionName: str,
         appServicePlan: pulumi_azure_native.web.AppServicePlan,
         functionStorageAccount: pulumi_azure_native.storage.StorageAccount,
+        blob: pulumi_azure_native.storage.Blob,
         resourceGroup: pulumi_azure_native.resources.ResourceGroup,
     ) -> pulumi_azure_native.web.WebApp:
         """
@@ -84,11 +91,25 @@ class FunctionApp:
         :type appServicePlan: pulumi_azure_native.web.AppServicePlan
         :param functionStorageAccount: The Storage Account.
         :type functionStorageAccount: pulumi_azure_native.storage.StorageAccount
+        :param blob: The blob.
+        :type blob: pulumi_azure_native.storage.Blob
         :param resourceGroup: The Azure Resource Group.
         :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
         :return: The Azure Function App.
         :rtype: pulumi_azure_native.web.WebApp
         """
+        pkg = blob.url.apply(lambda url: url)
+        storage_account_keys = list_storage_account_keys(
+            resource_group_name=resourceGroup.name,
+            account_name=functionStorageAccount.name,
+        )
+        primary_storage_key = storage_account_keys.keys[0].value
+        connection_string = Output.format(
+            "DefaultEndpointsProtocol=https;AccountName={};AccountKey={};EndpointSuffix=core.windows.net",
+            functionStorageAccount.name,
+            primary_storage_key,
+        )
+        pulumi.export("connection_string", connection_string)
 
         return pulumi_azure_native.web.WebApp(
             functionName,
@@ -101,7 +122,7 @@ class FunctionApp:
                         name="FUNCTIONS_EXTENSION_VERSION", value="~4"
                     ),
                     pulumi_azure_native.web.NameValuePairArgs(
-                        name="WEBSITE_RUN_FROM_PACKAGE", value="1"
+                        name="WEBSITE_RUN_FROM_PACKAGE", value=pkg
                     ),
                     pulumi_azure_native.web.NameValuePairArgs(
                         name="FUNCTIONS_WORKER_RUNTIME", value="python"
@@ -113,15 +134,36 @@ class FunctionApp:
                         name="runtime", value="python"
                     ),
                     pulumi_azure_native.web.NameValuePairArgs(
+                        name="AzureWebJobsStorage",
+                        value=connection_string,
+                    ),
+                    pulumi_azure_native.web.NameValuePairArgs(
                         name="AzureWebJobsStorage__accountName",
-                        value=functionStorageAccount.name,
+                        value=functionStorageAccount.name.apply(lambda name: name),
+                    ),
+                    pulumi_azure_native.web.NameValuePairArgs(
+                        name="WEBSITE_AUTH_LEVEL", value="Anonymous"
+                    ),
+                    pulumi_azure_native.web.NameValuePairArgs(
+                        name="WEBSITES_ENABLE_APP_SERVICE_STORAGE",
+                        # value=f"DefaultEndpointsProtocol=https;AccountName={storage_account_name};AccountKey={storage_account_key};EndpointSuffix=core.windows.net",
+                        value=False,
                     ),
                 ],
+                cors=pulumi_azure_native.web.CorsSettingsArgs(
+                    allowed_origins=[
+                        "*"
+                        # "https://portal.azure.com",
+                    ]
+                ),
                 linux_fx_version="Python|3.9",
+                http20_enabled=True,
             ),
             client_affinity_enabled=False,
             public_network_access="Enabled",
             location=resourceGroup.location,
+            https_only=True,
+            client_cert_mode="Ignore",
         )
 
     def __getattr__(self, attr):

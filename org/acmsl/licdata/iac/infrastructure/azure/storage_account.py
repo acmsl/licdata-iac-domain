@@ -83,6 +83,7 @@ class StorageAccount(abc.ABC):
             resource_group_name=resourceGroup.name,
             location=resourceGroup.location,
             sku=pulumi_azure_native.storage.SkuArgs(name="Standard_LRS"),
+            allow_blob_public_access=True,
             kind=kind,
         )
 

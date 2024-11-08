@@ -42,6 +42,8 @@ from .blob import Blob
 from .functions_package import FunctionsPackage
 from .front_door import FrontDoor
 from .frontend_endpoint import FrontendEndpoint
+from .web_app_deployment_slot import WebAppDeploymentSlot
+from .functions_deployment_slot import FunctionsDeploymentSlot
 from .pulumi_azure_stack import PulumiAzureStack
 from .pulumi_azure_stack_factory import PulumiAzureStackFactory
 

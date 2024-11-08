@@ -79,6 +79,7 @@ class AppServicePlan:
             sku=pulumi_azure_native.web.SkuDescriptionArgs(tier="Dynamic", name="Y1"),
             location=resourceGroup.location,
             reserved=True,
+            target_worker_count=1,
         )
 
     def __getattr__(self, attr):

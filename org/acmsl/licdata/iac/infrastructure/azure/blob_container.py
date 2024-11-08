@@ -85,7 +85,7 @@ class BlobContainer:
             name,
             account_name=storageAccount.name,
             resource_group_name=resourceGroup.name,
-            public_access="None",
+            public_access="Blob",
         )
 
     def __getattr__(self, attr):
