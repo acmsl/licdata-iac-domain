@@ -22,9 +22,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import abc
 import pulumi
 import pulumi_azure_native
+from pythoneda.shared import BaseObject
 
 
-class StorageAccount(abc.ABC):
+class StorageAccount(BaseObject, abc.ABC):
     """
     Azure Storage Account customized for Licdata.
 

@@ -21,10 +21,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import pulumi
 import pulumi_azure_native
+from pythoneda.shared import BaseObject
 from typing import List
 
 
-class SecurityGroup:
+class SecurityGroup(BaseObject):
     """
     Azure Security Group for Licdata.
 

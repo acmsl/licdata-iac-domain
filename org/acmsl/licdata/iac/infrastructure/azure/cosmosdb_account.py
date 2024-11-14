@@ -19,14 +19,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-# Import Pulumi Azure SDK
+from pythoneda.shared import BaseObject
 import pulumi
 import pulumi_azure_native
 from pulumi_azure_native import apimanagement, resources, storage, web, sql, network
 from typing import Dict, List
 
 
-class CosmosdbAccount:
+class CosmosdbAccount(BaseObject):
     """
     Azure CosmosDB Account for Licdata.
 

@@ -19,12 +19,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-# Import Pulumi Azure SDK
+from pythoneda.shared import BaseObject
 import pulumi
 import pulumi_azure_native
 
 
-class AppServicePlan:
+class AppServicePlan(BaseObject):
     """
     Azure App Service Plan for Licdata.
 
@@ -76,7 +76,10 @@ class AppServicePlan:
             appServicePlanName,
             resource_group_name=resourceGroup.name,
             kind="FunctionApp",
-            sku=pulumi_azure_native.web.SkuDescriptionArgs(tier="Dynamic", name="Y1"),
+            # sku=pulumi_azure_native.web.SkuDescriptionArgs(tier="Dynamic", name="Y1"),
+            sku=pulumi_azure_native.web.SkuDescriptionArgs(
+                tier="Dynamic", name="S1", capacity=1
+            ),
             location=resourceGroup.location,
             reserved=True,
             target_worker_count=1,

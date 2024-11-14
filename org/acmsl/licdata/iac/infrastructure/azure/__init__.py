@@ -44,6 +44,10 @@ from .front_door import FrontDoor
 from .frontend_endpoint import FrontendEndpoint
 from .web_app_deployment_slot import WebAppDeploymentSlot
 from .functions_deployment_slot import FunctionsDeploymentSlot
+from .app_insights import AppInsights
+from .container_registry import ContainerRegistry
+from .docker_pull_role_assignment import DockerPullRoleAssignment
+from .docker_pull_role_definition import DockerPullRoleDefinition
 from .pulumi_azure_stack import PulumiAzureStack
 from .pulumi_azure_stack_factory import PulumiAzureStackFactory
 

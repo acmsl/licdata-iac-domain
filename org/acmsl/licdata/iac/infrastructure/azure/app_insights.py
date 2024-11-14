@@ -1,8 +1,8 @@
 # vim: set fileencoding=utf-8
 """
-org/acmsl/licdata/iac/infrastructure/azure/dns_zone.py
+org/acmsl/licdata/iac/infrastructure/azure/app_insights.py
 
-This script defines the DnsZone class.
+This script defines the AppInsights class.
 
 Copyright (C) 2024-today acmsl's licdata
 
@@ -22,65 +22,65 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from pythoneda.shared import BaseObject
 import pulumi
 import pulumi_azure_native
+from pulumi_azure_native.storage import list_storage_account_keys
+from pulumi import Output
 
 
-class DnsZone(BaseObject):
+class AppInsights(BaseObject):
     """
-    Azure DnsZone for Licdata.
+    Azure Application Insights for Licdata.
 
-    Class name: DnsZone
+    Class name: AppInsights
 
     Responsibilities:
-        - Define the Azure DnsZone for Licdata.
+        - Define the Azure Function App for Licdata.
 
     Collaborators:
         - None
     """
 
-    def __init__(self, resourceGroup: pulumi_azure_native.resources.ResourceGroup):
+    def __init__(
+        self,
+        resourceGroup: pulumi_azure_native.resources.ResourceGroup,
+    ):
         """
-        Creates a new DnsZone instance.
+        Creates a new AppInsights instance.
         :param resourceGroup: The ResourceGroup.
         :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
         """
         super().__init__()
-        self._dns_zone = self.create_dns_zone(
-            "licenses", "licenses.acmsl.org", resourceGroup
-        )
-        self._dns_zone.name.apply(lambda name: pulumi.export("dns_zone", name))
+        self._app_insights = self.create_app_insights("licenses", resourceGroup)
+        self._app_insights.name.apply(lambda name: pulumi.export(f"app_insights", name))
 
     @property
-    def dns_zone(self) -> pulumi_azure_native.network.Zone:
+    def app_insights(self) -> pulumi_azure_native.insights.Component:
         """
-        Retrieves the DNS zone.
-        :return: Such DNS zone.
-        :rtype: pulumi_azure_native.network.Zone
+        Retrieves the app insights.
+        :return: Such component.
+        :rtype: pulumi_azure_native.insights.Component
         """
-        return self._dns_zone
+        return self._app_insights
 
-    def create_dns_zone(
+    def create_app_insights(
         self,
         name: str,
-        domainName: str,
         resourceGroup: pulumi_azure_native.resources.ResourceGroup,
-    ) -> pulumi_azure_native.network.Zone:
+    ) -> pulumi_azure_native.insights.Component:
         """
-        Creates a network zone.
-        :param name: The name of the DNS zone.
+        Creates an App Insights component.
+        :param name: The name of the component.
         :type name: str
-        :param domainName: The domain name.
-        :type domainName: str
         :param resourceGroup: The Azure Resource Group.
         :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
-        :return: The DNS zone.
-        :rtype: pulumi_azure_native.network.Zone
+        :return: The Azure App Insights component.
+        :rtype: pulumi_azure_native.insights.Component
         """
-        return pulumi_azure_native.network.Zone(
+        return pulumi_azure_native.insights.Component(
             name,
             resource_group_name=resourceGroup.name,
-            zone_type="Public",
-            zone_name=domainName,
-            location="global",
+            location=resourceGroup.location,
+            kind="web",
+            ingestion_mode="ApplicationInsights",
         )
 
     def __getattr__(self, attr):
@@ -89,7 +89,7 @@ class DnsZone(BaseObject):
         :param attr: The attribute.
         :type attr: Any
         """
-        return getattr(self._dns_zone, attr)
+        return getattr(self._app_insights, attr)
 
 
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et

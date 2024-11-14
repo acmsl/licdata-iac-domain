@@ -30,6 +30,10 @@ from .dns_record import DnsRecord
 from .blob_container import BlobContainer
 from .functions_package import FunctionsPackage
 from .functions_deployment_slot import FunctionsDeploymentSlot
+from .app_insights import AppInsights
+from .container_registry import ContainerRegistry
+from .docker_pull_role_definition import DockerPullRoleDefinition
+from .docker_pull_role_assignment import DockerPullRoleAssignment
 
 
 class PulumiAzureStack(PulumiStack):
@@ -65,7 +69,11 @@ class PulumiAzureStack(PulumiStack):
         self._dns_record = None
         self._blob_container = None
         self._functions_package = None
+        self._container_registry = None
         self._webapp_deployment_slot = None
+        self._app_insights = None
+        self._docker_pull_role_definition = None
+        self._docker_pull_role_assignment = None
 
     @classmethod
     def instantiate(cls):
@@ -166,6 +174,42 @@ class PulumiAzureStack(PulumiStack):
         """
         return self._webapp_deployment_slot
 
+    @property
+    def app_insights(self) -> AppInsights:
+        """
+        Retrieves the Azure App Insights instance.
+        :return: Such instance.
+        :rtype: org.acmsl.licdata.iac.infrastructure.azure.AppInsights
+        """
+        return self._app_insights
+
+    @property
+    def container_registry(self) -> ContainerRegistry:
+        """
+        Retrieves the Azure Container Registry instance.
+        :return: Such instance.
+        :rtype: org.acmsl.licdata.iac.infrastructure.azure.ContainerRegistry
+        """
+        return self._container_registry
+
+    @property
+    def docker_pull_role_definition(self) -> DockerPullRoleDefinition:
+        """
+        Retrieves the Role Definition allowing the functinos to perform Docker pulls.
+        :return: Such instance.
+        :rtype: org.acmsl.licdata.iac.infrastructure.azure.DorkecPullRoleDefinition
+        """
+        return self._docker_pull_role_definition
+
+    @property
+    def docker_pull_role_assignment(self) -> DockerPullRoleAssignment:
+        """
+        Retrieves the Role Assignment allowing the functions to perform Docker pulls.
+        :return: Such instance.
+        :rtype: org.acmsl.licdata.iac.infrastructure.azure.DockerPullRoleAssignment
+        """
+        return self._docker_pull_role_assignment
+
     def declare_infrastructure(self):
         """
         Creates the infrastructure.
@@ -180,21 +224,36 @@ class PulumiAzureStack(PulumiStack):
         #    self._dns_zone,
         #    self._resource_group,
         # )
-        self._blob_container = BlobContainer(
-            self._function_storage_account, self._resource_group
-        )
-        self._functions_package = FunctionsPackage(
-            self._blob_container, self._function_storage_account, self._resource_group
-        )
+        # self._blob_container = BlobContainer(
+        #     self._function_storage_account, self._resource_group
+        # )
+        # self._functions_package = FunctionsPackage(
+        #     self._blob_container, self._function_storage_account, self._resource_group
+        # )
+        self._app_insights = AppInsights(self._resource_group)
+
+        self._container_registry = ContainerRegistry(self._resource_group)
+
         self._function_app = FunctionApp(
+            self._app_insights,
             self._function_storage_account,
             self._app_service_plan,
-            self._functions_package,
+            self._container_registry,
             self._resource_group,
         )
         # self._webapp_deployment_slot = FunctionsDeploymentSlot(
         #     self._function_app, self._resource_group
         # )
+        self._docker_pull_role_definition = DockerPullRoleDefinition(
+            self._container_registry, self._resource_group
+        )
+
+        self._docker_pull_role_assignment = DockerPullRoleAssignment(
+            self._function_app,
+            self._docker_pull_role_definition,
+            self._container_registry,
+            self._resource_group,
+        )
 
 
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et
