@@ -39,13 +39,13 @@ class FunctionsDeploymentSlot(WebAppDeploymentSlot):
 
     def __init__(
         self,
-        webApp: pulumi_azure_native.web.WebApp,
-        resourceGroup: pulumi_azure_native.resources.ResourceGroup,
+        webApp: org.acmsl.licdata.iac.infrastructure.azure.WebApp,
+        resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup,
     ):
         """
         Creates a new WebAppDeploymentSlot instance.
         :param webApp: The web app.
-        :type webApp: pulumi_azure_native.web.WebApp
+        :type webApp: org.acmsl.licdata.iac.infrastructure.azure.WebApp
         :param resourceGroup: The ResourceGroup.
         :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
         """

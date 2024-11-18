@@ -19,12 +19,15 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from pythoneda.shared import BaseObject
+from org.acmsl.licdata.iac.domain import Resource
+from .api_management_service import ApiManagementService
+from .resource_group import ResourceGroup
 import pulumi
 import pulumi_azure_native
+from typing import override
 
 
-class Api(BaseObject):
+class Api(Resource):
     """
     Azure Api for Licdata.
 
@@ -39,74 +42,76 @@ class Api(BaseObject):
 
     def __init__(
         self,
-        resourceGroup: pulumi_azure_native.resources.ResourceGroup,
-        apiManagementService: pulumi_azure_native.apimanagement.ApiManagementService,
+        stackName: str,
+        projectName: str,
+        location: str,
+        apiManagementService: ApiManagementService,
+        resourceGroup: ResourceGroup,
     ):
         """
         Creates a new Api instance.
-        :param resourceGroup: The ResourceGroup.
-        :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
+        :param stackName: The name of the stack.
+        :type stackName: str
+        :param projectName: The name of the project.
+        :type projectName: str
+        :param location: The Azure location.
+        :type location: str
         :param apiManagementService: The ApiManagementService.
-        :type apiManagementService: pulumi_azure_native.apimanagement.ApiManagementService
+        :type apiManagementService: org.acmsl.licdata.iac.infrastructure.azure.ApiManagementService
+        :param resourceGroup: The ResourceGroup.
+        :type resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup
         """
-        super().__init__()
-        self._api = self.create_api(
-            "licensesApi",
-            resourceGroup,
-            apiManagementService,
-            "licenses",
-            "Licenses API",
+        super().__init__(
+            stackName,
+            projectName,
+            location,
+            {
+                "api_management_service": apiManagementService,
+                "resource_group": resourceGroup,
+            },
         )
-        self._api.name.apply(lambda name: pulumi.export("api", name))
 
-    @property
-    def api(self) -> pulumi_azure_native.apimanagement.Api:
+    # @override
+    def _build_name(self, stackName: str, projectName: str, location: str) -> str:
         """
-        Retrieves the API.
-        :return: Such API.
-        :rtype: pulumi_azure_native.apimanagement.Api
+        Builds the resource name.
+        :param stackName: The name of the stack.
+        :type stackName: str
+        :param projectName: The name of the project.
+        :type projectName: str
+        :param location: The Azure location.
+        :type location: str
+        :return: The resource name.
+        :rtype: str
         """
-        return self._api
+        return f"{stackName}-{projectName}-{location}-api"
 
-    def create_api(
-        self,
-        name: str,
-        resourceGroup: pulumi_azure_native.resources.ResourceGroup,
-        apiManagementService: pulumi_azure_native.apimanagement.ApiManagementService,
-        path: str,
-        displayName: str,
-    ) -> pulumi_azure_native.apimanagement.Api:
+    # @override
+    def _create(self, name: str) -> pulumi_azure_native.apimanagement.Api:
         """
         Creates an API.
         :param name: The name of the API.
         :type name: str
-        :param resourceGroup: The Azure Resource Group.
-        :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
-        :param apiManagementService: The API Management Service.
-        :type apiManagementService: pulumi_azure_native.apimanagement.ApiManagementService
-        :param path: The path of the API.
-        :type path: str
-        :param displayName: The display name of the API.
-        :type displayName: str
         :return: The API.
         :rtype: pulumi_azure_native.apimanagement.Api
         """
         return pulumi_azure_native.apimanagement.Api(
             name,
-            resource_group_name=resourceGroup.name,
-            service_name=apiManagementService.name,
-            path=path,
+            resource_group_name=self.resource_group.name,
+            service_name=api_management_service.name,
+            path="licenses",
             protocols=["https"],
-            display_name=displayName,
+            display_name=f"{stackName}-{projectName}-{location} API",
         )
 
-        def __getattr__(self, attr):
-            """
-            Delegates attribute/method lookup to the wrapped instance.
-            :param attr: The attribute.
-            :type attr: Any
-            """
-            return getattr(self._api, attr)
+    # @override
+    def _post_create(self, resource: pulumi_azure_native.apimanagement.Api):
+        """
+        Post-create hook.
+        :param resource: The resource.
+        :type resource: pulumi_azure_native.apimanagement.Api
+        """
+        resource.apply(lambda name: pulumi.export("api", name))
 
 
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et

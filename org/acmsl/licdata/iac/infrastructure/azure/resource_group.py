@@ -19,12 +19,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from pythoneda.shared import BaseObject
+from org.acmsl.licdata.iac.domain import Resource
 import pulumi
 import pulumi_azure_native
+from typing import override
 
 
-class ResourceGroup(BaseObject):
+class ResourceGroup(Resource):
     """
     Azure ResourceGroup resources for Licdata.
 
@@ -37,50 +38,54 @@ class ResourceGroup(BaseObject):
         - None
     """
 
-    def __init__(self, location: str):
+    def __init__(self, stackName: str, projectName: str, location: str):
         """
         Creates a new ResourceGroup instance.
-        :param location: The location of the resource group.
+        :param stackName: The name of the stack.
+        :type stackName: str
+        :param projectName: The name of the project.
+        :type projectName: str
+        :param location: The Azure location.
         :type location: str
         """
-        super().__init__()
-        self._resource_group = self.create_resource_group("licenses", location)
-        self._resource_group.name.apply(
-            lambda name: pulumi.export("resource_group", name)
-        )
+        super().__init__(stackName, projectName, location, {})
 
-    @property
-    def resource_group(self) -> pulumi_azure_native.resources.ResourceGroup:
+    # @override
+    def _build_name(self, stackName: str, projectName: str, location: str) -> str:
         """
-        Retrieves the Azure Resource Group.
-        :return: Such Resource Group.
-        :rtype: pulumi_azure_native.resources.ResourceGroup
+        Builds the resource name.
+        :param stackName: The name of the stack.
+        :type stackName: str
+        :param projectName: The name of the project.
+        :type projectName: str
+        :param location: The Azure location.
+        :type location: str
+        :return: The resource name.
+        :rtype: str
         """
-        return self._resource_group
+        return f"{stackName}-{projectName}-{location}-resource-group"
 
-    def create_resource_group(
-        self, resourceGroupName: str, location: str
-    ) -> pulumi_azure_native.resources.ResourceGroup:
+    # @override
+    def _create(self, name: str) -> pulumi_azure_native.resources.ResourceGroup:
         """
         Creates an Azure Resource Group.
-        :param resourceGroupName: The name of the resource group.
-        :type resourceGroupName: str
-        :param location: The location of the resource group.
-        :type location: str
+        :param name: The name of the resource group.
+        :type name: str
         :return: The Azure Resource Group.
         :rtype: pulumi_azure_native.resources.ResourceGroup
         """
         return pulumi_azure_native.resources.ResourceGroup(
-            resourceGroupName, location=location
+            name, location=self.location, resource_group_name=name
         )
 
-    def __getattr__(self, attr):
+    # @override
+    def _post_create(self, resource: pulumi_azure_native.resources.ResourceGroup):
         """
-        Delegates attribute/method lookup to the wrapped instance.
-        :param attr: The attribute.
-        :type attr: Any
+        Post-create hook.
+        :param resource: The resource.
+        :type resource: pulumi_azure_native.resources.ResourceGroup
         """
-        return getattr(self._resource_group, attr)
+        resource.name.apply(lambda name: pulumi.export("resource_group", name))
 
 
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et

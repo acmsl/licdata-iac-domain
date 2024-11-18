@@ -26,12 +26,6 @@ from pulumi.automation.errors import CommandError
 from org.acmsl.licdata.iac.domain import InfrastructureUpdated
 
 
-def declare_infrastructure_wrapper_old():
-    print("In declare_infrastructure_wrapper!")
-    resource_group = azure_native.resources.ResourceGroup("sample")
-    pulumi.export("resource_group_name", resource_group.name)
-
-
 class PulumiStack(Stack, abc.ABC):
     """
     Pulumi implementation of Licdata infrastructure stacks.

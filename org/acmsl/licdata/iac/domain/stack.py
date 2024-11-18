@@ -21,6 +21,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import abc
 from pythoneda.shared import BaseObject, Port, primary_key_attribute
+from .resource import Resource
+from typing import List
 
 
 class Stack(Port, BaseObject):
@@ -50,6 +52,7 @@ class Stack(Port, BaseObject):
         self._stack_name = stackName
         self._project_name = projectName
         self._location = location
+        self._resources = []
 
     @property
     @primary_key_attribute
@@ -80,10 +83,26 @@ class Stack(Port, BaseObject):
         """
         return self._location
 
+    @property
+    def resources(self) -> List[Resource]:
+        """
+        Retrieves the resources.
+        :return: The resources.
+        :rtype: List[Resource]
+        """
+        return self._resources
+
     @abc.abstractmethod
     async def up(self):
         """
         Brings up the stack.
+        """
+        pass
+
+    @abc.abstractmethod
+    async def down(self):
+        """
+        Brings down the stack.
         """
         pass
 

@@ -1,8 +1,8 @@
 # vim: set fileencoding=utf-8
 """
-org/acmsl/licdata/iac/infrastructure/azure/function_app.py
+org/acmsl/licdata/iac/infrastructure/azure/web_app.py
 
-This script defines the FunctionApp class.
+This script defines the WebApp class.
 
 Copyright (C) 2024-today acmsl's licdata
 
@@ -19,21 +19,23 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from pythoneda.shared import BaseObject
+from org.acmsl.licdata.iac.domain import Resource
+from .resource_group import ResourceGroup
 import pulumi
 import pulumi_azure_native
 from pulumi_azure_native.storage import list_storage_account_keys
 from pulumi import Output
+from typing import override
 
 
-class FunctionApp(BaseObject):
+class WebApp(Resource):
     """
-    Azure Function App for Licdata.
+    Azure Web App for Licdata.
 
-    Class name: FunctionApp
+    Class name: WebApp
 
     Responsibilities:
-        - Define the Azure Function App for Licdata.
+        - Define the Azure Web App for Licdata.
 
     Collaborators:
         - None
@@ -41,71 +43,67 @@ class FunctionApp(BaseObject):
 
     def __init__(
         self,
-        appInsights: pulumi_azure_native.insights.Component,
-        storageAccount: pulumi_azure_native.storage.StorageAccount,
-        appServicePlan: pulumi_azure_native.web.AppServicePlan,
-        containerRegistry: pulumi_azure_native.containerregistry.Registry,
-        resourceGroup: pulumi_azure_native.resources.ResourceGroup,
+        stackName: str,
+        projectName: str,
+        location: str,
+        appInsights: org.acmsl.licdata.iac.infrastructure.azure.AppInsights,
+        storageAccount: org.acmsl.licdata.iac.infrastructure.azure.StorageAccount,
+        appServicePlan: org.acmsl.licdata.iac.infrastructure.azure.AppServicePlan,
+        containerRegistry: org.acmsl.licdata.iac.infrastructure.azure.ContainerRegistry,
+        resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup,
     ):
         """
-        Creates a new FunctionApp instance.
+        Creates a new WebApp instance.
+        :param stackName: The name of the stack.
+        :type stackName: str
+        :param projectName: The name of the project.
+        :type projectName: str
+        :param location: The Azure location.
+        :type location: str
         :param appInsights: The App Insights instance.
-        :type appInsights: pulumi_azure_native.insights.Component
+        :type appInsights: org.acmsl.licdata.iac.infrastructure.azure.AppInsights
         :param storageAccount: The StorageAccount.
-        :type storageAccount: pulumi_azure_native.storage.StorageAccount
+        :type storageAccount: org.acmsl.licdata.iac.infrastructure.azure.StorageAccount
         :param appServicePlan: The AppServicePlan.
-        :type appServicePlan: pulumi_azure_native.web.AppServicePlan
+        :type appServicePlan: org.acmsl.licdata.iac.infrastructure.azure.AppServicePlan
         :param containerRegistry: The container registry.
-        :type containerRegistry: pulumi_azure_native.containerregistry.Registry
+        :type containerRegistry: org.acmsl.licdata.iac.infrastructure.azure.ContainerRegistry
         :param resourceGroup: The ResourceGroup.
-        :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
+        :type resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup
         """
-        super().__init__()
-        self._function_app = self.create_function_app(
-            "licenses",
-            appInsights,
-            appServicePlan,
-            storageAccount,
-            containerRegistry,
-            resourceGroup,
-        )
-        self._function_app.name.apply(lambda name: pulumi.export(f"function_app", name))
-        self._function_app.default_host_name.apply(
-            lambda name: pulumi.export("function_app_url", f"https://{name}")
+        super().__init__(
+            stackName,
+            projectName,
+            location,
+            {
+                "app_insights": appInsights,
+                "storage_account": storageAccount,
+                "container_registry": containerRegistry,
+                "resource_group": resourceGroup,
+            },
         )
 
-    @property
-    def function_app(self) -> pulumi_azure_native.web.WebApp:
+    # @override
+    def _build_name(self, stackName: str, projectName: str, location: str) -> str:
         """
-        Retrieves the function web app.
-        :return: Such web app.
-        :rtype: pulumi_azure_native.web.WebApp
+        Builds the resource name.
+        :param stackName: The name of the stack.
+        :type stackName: str
+        :param projectName: The name of the project.
+        :type projectName: str
+        :param location: The Azure location.
+        :type location: str
+        :return: The resource name.
+        :rtype: str
         """
-        return self._function_app
+        return f"{stackName}-{projectName}-{location}-web-app"
 
-    def create_function_app(
-        self,
-        functionName: str,
-        appInsights: pulumi_azure_native.insights.Component,
-        appServicePlan: pulumi_azure_native.web.AppServicePlan,
-        functionStorageAccount: pulumi_azure_native.storage.StorageAccount,
-        containerRegistry: pulumi_azure_native.containerregistry.Registry,
-        resourceGroup: pulumi_azure_native.resources.ResourceGroup,
-    ) -> pulumi_azure_native.web.WebApp:
+    # @override
+    def _create(self, name: str) -> pulumi_azure_native.web.WebApp:
         """
         Creates an Azure Function App.
-        :param functionName: The name of the function.
-        :type functionName: str
-        :param appInsights: The App Insights instance.
-        :type appInsights: pulumi_azure_native.insights.Component
-        :param appServicePlan: The App Service Plan.
-        :type appServicePlan: pulumi_azure_native.web.AppServicePlan
-        :param functionStorageAccount: The Storage Account.
-        :type functionStorageAccount: pulumi_azure_native.storage.StorageAccount
-        :param containerRegistry: The containerRegistry.
-        :type containerRegistry: pulumi_azure_native.containerregistry.Registry
-        :param resourceGroup: The Azure Resource Group.
-        :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
+        :param name: The name of the app.
+        :type name: str
         :return: The Azure Function App.
         :rtype: pulumi_azure_native.web.WebApp
         """
@@ -122,8 +120,8 @@ class FunctionApp(BaseObject):
         # )
         acr_credentials = (
             pulumi_azure_native.containerregistry.list_registry_credentials(
-                resource_group_name=resourceGroup.name,
-                registry_name=containerRegistry.name,
+                resource_group_name=self.resource_group.name,
+                registry_name=self.container_registry.name,
             )
         )
 
@@ -131,21 +129,21 @@ class FunctionApp(BaseObject):
         acr_password = acr_credentials.passwords[0].value
 
         storage_account_keys = list_storage_account_keys(
-            resource_group_name=resourceGroup.name,
-            account_name=functionStorageAccount.name,
+            resource_group_name=self.resource_group.name,
+            account_name=self.storage_account.name,
         )
         primary_storage_key = storage_account_keys.keys[0].value
         connection_string = Output.format(
             "DefaultEndpointsProtocol=https;AccountName={};AccountKey={};EndpointSuffix=core.windows.net",
-            functionStorageAccount.name,
+            self.storage_account.name,
             primary_storage_key,
         )
         pulumi.export("connection_string", connection_string)
 
         return pulumi_azure_native.web.WebApp(
-            functionName,
-            resource_group_name=resourceGroup.name,
-            server_farm_id=appServicePlan.id,
+            name,
+            resource_group_name=self.resource_group.name,
+            server_farm_id=self.app_service_plan.id,
             kind="FunctionApp,linux,container",
             identity=pulumi_azure_native.web.ManagedServiceIdentityArgs(
                 type="SystemAssigned"
@@ -173,7 +171,7 @@ class FunctionApp(BaseObject):
                     ),
                     pulumi_azure_native.web.NameValuePairArgs(
                         name="AzureWebJobsStorage__accountName",
-                        value=functionStorageAccount.name.apply(lambda name: name),
+                        value=self.storage_account.name.apply(lambda name: name),
                     ),
                     pulumi_azure_native.web.NameValuePairArgs(
                         name="WEBSITE_AUTH_LEVEL", value="Anonymous"
@@ -184,11 +182,11 @@ class FunctionApp(BaseObject):
                     ),
                     pulumi_azure_native.web.NameValuePairArgs(
                         name="APPINSIGHTS_INSTRUMENTATIONKEY",
-                        value=appInsights.instrumentation_key,
+                        value=self.app_insights.instrumentation_key,
                     ),
                     pulumi_azure_native.web.NameValuePairArgs(
                         name="APPLICATIONINSIGHTS_CONNECTION_STRING",
-                        value=appInsights.connection_string,
+                        value=self.app_insights.connection_string,
                     ),
                     pulumi_azure_native.web.NameValuePairArgs(
                         name="LD_LIBRARY_PATH", value="/home/site/wwwroot"
@@ -202,13 +200,13 @@ class FunctionApp(BaseObject):
                     ),
                     pulumi_azure_native.web.NameValuePairArgs(
                         name="DOCKER_REGISTRY_SERVER_USERNAME",
-                        value=containerRegistry.admin_user_enabled.apply(
+                        value=self.container_registry.admin_user_enabled.apply(
                             lambda enabled: acr_username if enabled else ""
                         ),
                     ),
                     pulumi_azure_native.web.NameValuePairArgs(
                         name="DOCKER_REGISTRY_SERVER_PASSWORD",
-                        value=containerRegistry.admin_user_enabled.apply(
+                        value=self.container_registry.admin_user_enabled.apply(
                             lambda enabled: (acr_password if enabled else "")
                         ),
                     ),
@@ -225,23 +223,22 @@ class FunctionApp(BaseObject):
             ),
             client_affinity_enabled=False,
             public_network_access="Enabled",
-            location=resourceGroup.location,
+            location=self.location,
             https_only=True,
             client_cert_mode="Ignore",
         )
 
-    def __getattr__(self, attr):
+    # @override
+    def _post_create(self, resource: pulumi_azure_native.web.WebApp):
         """
-        Delegates attribute/method lookup to the wrapped instance.
-        :param attr: The attribute.
-        :type attr: Any
+        Post-create hook.
+        :param resource: The resource.
+        :type resource: pulumi_azure_native.web.WebApp
         """
-        try:
-            return getattr(self._function_app, attr)
-        except AttributeError as e:
-            raise AttributeError(
-                f"'{type(self._function_app).__name__}' object has no attribute '{attr}"
-            )
+        resource.name.apply(lambda name: pulumi.export(f"function_app", name))
+        resource.default_host_name.apply(
+            lambda name: pulumi.export("function_app_url", f"https://{name}")
+        )
 
 
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et

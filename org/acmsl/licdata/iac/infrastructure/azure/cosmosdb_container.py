@@ -19,10 +19,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from pythoneda.shared import BaseObject
+from org.acmsl.licdata.iac.domain import Resource
+from .cosmosdb_account import CosmosdbAccount
+from .cosmosdb_database import CosmosdbDatabase
+from .resource_group import ResourceGroup
 import pulumi
 import pulumi_azure_native
-from typing import Dict, List
+from typing import Dict, override
 
 
 class CosmosdbContainer(BaseObject):
@@ -40,87 +43,107 @@ class CosmosdbContainer(BaseObject):
 
     def __init__(
         self,
-        resourceGroup: pulumi_azure_native.resources.ResourceGroup,
-        cosmosdbAccount: pulumi_azure_native.documentdb.DatabaseAccount,
-        cosmosdbDatabase: pulumi_azure_native.documentdb.SqlResourceSqlDatabase,
+        stackName: str,
+        projectName: str,
+        location: str,
+        partitionKey: Dict[str, str],
+        resourceGroup: ResourceGroup,
+        cosmosdbAccount: CosmosdbAccount,
+        cosmosdbDatabase: CosmosdbDatabase,
     ):
         """
         Creates a new Azure instance.
+        :param stackName: The name of the stack.
+        :type stackName: str
+        :param projectName: The name of the project.
+        :type projectName: str
+        :param location: The Azure location.
+        :type location: str
         :param resourceGroup: The ResourceGroup.
         :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
         :param cosmosdbAccount: The CosmosDB account.
-        :type cosmosdbAccount: pulumi_azure_native.documentdb.DatabaseAccount
+        :type cosmosdbAccount: org.acmsl.licdata.iac.infrastructure.azure.CosmosdbAccount
         :param cosmosdbDatabase: The CosmosDB database.
-        :param cosmosdbDatabase: pulumi_azure_native.documentdb.SqlResourceSqlDatabase
+        :param cosmosdbDatabase: org.acmsl.licdata.iac.infrastructure.azure.CosmosdbDatabase
         """
-        super().__init__()
-        self._cosmosdb_container = self.create_cosmosdb_container(
-            "licenses",
-            cosmosdbAccount,
-            cosmosdbDatabase,
-            resourceGroup,
+        super().__init__(
+            stackName,
+            projectName,
+            location,
             {
-                "paths": ["/id"],
-                "kind": "Hash",
+                "cosmosdb_account": cosmosdbAccount,
+                "cosmosdb_database": cosmosdb_database,
+                "resource_group": resourceGroup,
             },
         )
-        self._cosmosdb_container.name.apply(
-            lambda name: pulumi.export("cosmosdb_container", name)
-        )
+        self._partition_key = partitionKey
 
     @property
-    def cosmosdb_container(
-        self,
-    ) -> pulumi_azure_native.documentdb.SqlResourceSqlContainer:
+    def partition_key(self) -> Dict[str, str]:
         """
-        Retrieves the Cosmos DB Container.
-        :return: Such container.
-        :rtype: pulumi_azure_native.documentdb.SqlResourceSqlContainer
+        Retrieves the partition key.
+        :return: Such partition key.
+        :rtype: Dict[str, str]
         """
-        return self._cosmosdb_container
+        return (
+            (
+                self._partition_key
+                if self._partition_key is not None
+                else {
+                    "paths": ["/id"],
+                    "kind": "Hash",
+                }
+            ),
+        )
 
-    def create_cosmosdb_container(
-        self,
-        containerName: str,
-        cosmosDbAccount: pulumi_azure_native.documentdb.DatabaseAccount,
-        cosmosDbDatabase: pulumi_azure_native.documentdb.SqlResourceSqlDatabase,
-        resourceGroup: pulumi_azure_native.resources.ResourceGroup,
-        partitionKey: Dict,
+    # @override
+    def _build_name(self, stackName: str, projectName: str, location: str) -> str:
+        """
+        Builds the resource name.
+        :param stackName: The name of the stack.
+        :type stackName: str
+        :param projectName: The name of the project.
+        :type projectName: str
+        :param location: The Azure location.
+        :type location: str
+        :return: The resource name.
+        :rtype: str
+        """
+        return f"{stackName}-{projectName}-{location}-cosmosdb-container"
+
+    # @override
+    def _create(
+        self, name: str
     ) -> pulumi_azure_native.documentdb.SqlResourceSqlContainer:
         """
         Creates an Azure Cosmos DB Container.
-        :param containerName: The name of the container.
-        :type containerName: str
-        :param cosmosDbAccount: The Azure CosmosDB Account.
-        :type cosmosDbAccount: pulumi_azure_native.documentdb.DatabaseAccount
-        :param database: The Azure CosmosDB database.
-        :type database: pulumi_azure_native.documentdb.SqlResourceSqlDatabase
-        :param resourceGroup: The resource group.
-        :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
-        :param partitionKey: The partition key.
-        :type partitionKey: Dict
+        :param name: The name of the resource.
+        :type name: str
         :return: The Azure Cosmos DB Container.
         :rtype: pulumi_azure_native.documentdb.SqlResourceSqlContainer
         """
         return pulumi_azure_native.documentdb.SqlResourceSqlContainer(
-            containerName,
-            resource_group_name=resourceGroup.name,
-            account_name=cosmosDbAccount.name,
-            container_name=containerName,
-            database_name=cosmosDbDatabase.name,
-            location=resourceGroup.location,
+            name,
+            resource_group_name=self.resource_group.name,
+            account_name=self.cosmosdb_account.name,
+            container_name=name,
+            database_name=self.cosmosdb_database.name,
+            location=self.location,
             resource=pulumi_azure_native.documentdb.SqlContainerResourceArgs(
-                id=cosmosDbDatabase.name, partition_key=partitionKey
+                id=self.cosmosdb_database.name, partition_key=partitionKey
             ),
         )
 
-    def __getattr__(self, attr):
+    # @override
+    def _post_create(
+        self, resource: pulumi_azure_native.documentdb.SqlResourceSqlContainer
+    ):
         """
-        Delegates attribute/method lookup to the wrapped instance.
-        :param attr: The attribute.
-        :type attr: Any
+        Post-create hook.
+        :param resource: The resource.
+        :type resource: pulumi_azure_native.documentdb.SqlResourceSqlContainer
         """
-        return getattr(self._cosmosdb_container, attr)
+        resource.name.apply(lambda name: pulumi.export("cosmosdb_container", name))
 
 
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et

@@ -19,13 +19,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from pythoneda.shared import BaseObject
+from org.acmsl.licdata.iac.domain import Resource
+from .resource_group import ResourceGroup
 import pulumi
 import pulumi_azure_native
-from typing import List
+from typing import override
 
 
-class FrontDoor(BaseObject):
+class FrontDoor(Resource):
     """
     Azure FrontDoor for Licdata.
 
@@ -40,52 +41,80 @@ class FrontDoor(BaseObject):
 
     def __init__(
         self,
-        resourceGroup: pulumi_azure_native.resources.ResourceGroup,
+        stackName: str,
+        projectName: str,
+        location: str,
+        profileName: str,
+        frontDoorType: str,
+        resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup,
     ):
         """
-        Creates a new Front Door.
+        Creates a new FrontDoor instance.
+        :param stackName: The name of the stack.
+        :type stackName: str
+        :param projectName: The name of the project.
+        :type projectName: str
+        :param location: The Azure location.
+        :type location: str
+        :param profileName: The name of the profile.
+        :type profileName: str
+        :param frontDoorType: The type of the front door.
+        :type frontDoorType: str
         :param resourceGroup: The ResourceGroup.
-        :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
+        :type resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup
         """
-        super().__init__()
-
-        self._front_door = self.create_front_door(
-            "licenseApi", "licenseApiProfile", resourceGroup
+        super().__init__(
+            stackName, projectName, location, {"resource_group": resourceGroup}
         )
-        self._front_door.name.apply(lambda name: pulumi.export("front_door", name))
+        self._profile_name = profileName
+        self._front_door_type = frontDoorType
 
     @property
-    def front_door(self) -> pulumi_azure_native.cdn.Profile:
+    def profile_name(self) -> str:
         """
-        Retrieves the front door.
-        :return: The front door.
-        :rtype: pulumi_azure_native.cdn.Profile
+        Retrieves the name of the profile.
+        :return: Such name.
+        :rtype: str
         """
-        return self._front_door
+        return self._profile_name
 
-    def create_front_door(
-        self,
-        name: str,
-        profileName: str,
-        resourceGroup: pulumi_azure_native.resources.ResourceGroup,
-    ) -> pulumi_azure_native.cdn.Profile:
+    @property
+    def front_door_type(self) -> str:
+        """
+        Retrieves the type of the front door.
+        :return: Such type.
+        :rtype: str
+        """
+        return (
+            self._front_door_type
+            if self._front_door_type is not None
+            else "Standard_AzureFrontDoor"
+        )
+
+    # @override
+    def _create(self, name: str) -> pulumi_azure_native.cdn.Profile:
         """
         Creates a Front Door.
         :param name: The name of the front door.
         :type name: str
-        :param profileName: The name of the profile.
-        :type profileName: str
-        :param resourceGroup: The resource group.
-        :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
         :return: The Front Door instance.
         :rtype: pulumi_azure_native.cdn.Profile
         """
         return pulumi_azure_native.cdn.Profile(
             name,
-            resource_group_name=resourceGroup.name,
-            profile_name=profileName,
-            sku=pulumi_azure_native.cdn.SkuArgs(name="Standard_AzureFrontDoor"),
+            resource_group_name=self.resource_group.name,
+            profile_name=self.profile_name,
+            sku=pulumi_azure_native.cdn.SkuArgs(name=self.front_door_type),
         )
+
+    # @override
+    def _post_create(self, resource: pulumi_azure_native.cdn.Profile):
+        """
+        Post-create hook.
+        :param resource: The resource.
+        :type resource: pulumi_azure_native.cdn.Profile
+        """
+        resource.name.apply(lambda name: pulumi.export("front_door", name))
 
     def __getattr__(self, attr):
         """

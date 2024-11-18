@@ -19,13 +19,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from pythoneda.shared import BaseObject
+from org.acmsl.licdata.iac.domain import Resource
+from .resource_group import ResourceGroup
 import pulumi
 import pulumi_azure_native
-from typing import List
+from typing import override
 
 
-class FrontendEndpoint(BaseObject):
+class FrontendEndpoint(Resource):
     """
     Azure FrontendEndpoint for Licdata.
 
@@ -40,83 +41,102 @@ class FrontendEndpoint(BaseObject):
 
     def __init__(
         self,
-        frontDoor: pulumi_azure_native.cdn.Profile,
-        dnsRecord: pulumi_azure_native.network.RecordSet,
-        dnsZone: pulumi_azure_native.network.Zone,
-        resourceGroup: pulumi_azure_native.resources.ResourceGroup,
+        stackName: str,
+        projectName: str,
+        location: str,
+        endpointName: str,
+        frontDoor: org.acmsl.licdata.iac.infrastructure.azure.FrontDoor,
+        dnsRecord: org.acmsl.licdata.iac.infrastructure.azure.DnsRecord,
+        dnsZone: org.acmsl.licdata.iac.infrastructure.azure.DnsZone,
+        resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup,
     ):
         """
         Creates a new Frontend Endpoint.
-        :param frontDoor: The Front Door.
-        :type frontDoor: pulumi_azure_native.cdn.Profile
-        :param dnsRecord: The DNS record for the endpoint.
-        :type dnsRecord: pulumi_azure_native.network.RecordSet
-        :param dnsZone: The DNS zone.
-        :type dnsZone: pulumi_azure_native.network.Zone
-        :param resourceGroup: The ResourceGroup.
-        :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
-        """
-        super().__init__()
-
-        self._frontend_endpoint = self.create_frontend_endpoint(
-            "license", "licenseEndpoint", frontDoor, dnsRecord, dnsZone, resourceGroup
-        )
-        self._frontend_endpoint.name.apply(
-            lambda name: pulumi.export("frontend_endpoint", name)
-        )
-
-    @property
-    def frontend_endpoint(self) -> pulumi_azure_native.cdn.AFDEndpoint:
-        """
-        Retrieves the frontend endpoint.
-        :return: The frontend endpoint.
-        :rtype: pulumi_azure_native.cdn.AFDEndpoint
-        """
-        return self._frontend_endpoint
-
-    def create_frontend_endpoint(
-        self,
-        name: str,
-        endpointName: str,
-        frontDoor: pulumi_azure_native.cdn.Profile,
-        dnsRecord: pulumi_azure_native.network.RecordSet,
-        dnsZone: pulumi_azure_native.network.Zone,
-        resourceGroup: pulumi_azure_native.resources.ResourceGroup,
-    ) -> pulumi_azure_native.cdn.AFDEndpoint:
-        """
-        Creates a Front Door.
-        :param name: The name of the frontend endpoint.
-        :type name: str
+        :param stackName: The name of the stack.
+        :type stackName: str
+        :param projectName: The name of the project.
+        :type projectName: str
+        :param location: The Azure location.
+        :type location: str
         :param endpointName: The name of the endpoint.
         :type endpointName: str
         :param frontDoor: The Front Door.
         :type frontDoor: pulumi_azure_native.cdn.Profile
         :param dnsRecord: The DNS record for the endpoint.
-        :type dnsRecord: pulumi_azure_native.network.RecordSet
+        :type dnsRecord: org.acmsl.licdata.iac.infrastructure.azure.DnsRecord
         :param dnsZone: The DNS zone.
-        :type dnsZone: pulumi_azure_native.network.Zone
-        :param resourceGroup: The resource group.
-        :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
+        :type dnsZone: org.acmsl.licdata.iac.infrastructure.azure.DnsZone
+        :param resourceGroup: The ResourceGroup.
+        :type resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup
+        """
+        super().__init__(
+            stackName,
+            projectName,
+            location,
+            {
+                "front_door": frontDoor,
+                "dns_record": dnsRecord,
+                "dns_zone": dnsZone,
+                "resource_group": resourceGroup,
+            },
+        )
+        self._endpoint_name = endpointName
+
+        self._frontend_endpoint = self.create_frontend_endpoint(
+            "license", "licenseEndpoint", frontDoor, dnsRecord, dnsZone, resourceGroup
+        )
+
+    @property
+    def endpoint_name(self) -> str:
+        """
+        Retrieves the endpoint name.
+        :return: The endpoint name.
+        :rtype: str
+        """
+        return self._endpoint_name if self._endpoint_name is not None else "licdata"
+
+    # @override
+    def _build_name(self, stackName: str, projectName: str, location: str) -> str:
+        """
+        Builds the resource name.
+        :param stackName: The name of the stack.
+        :type stackName: str
+        :param projectName: The name of the project.
+        :type projectName: str
+        :param location: The Azure location.
+        :type location: str
+        :return: The resource name.
+        :rtype: str
+        """
+        return f"{stackName}-{projectName}-{location}-frontend-endpoint"
+
+    # @override
+    def _create(self, name: str) -> pulumi_azure_native.cdn.AFDEndpoint:
+        """
+        Creates a Front Door.
+        :param name: The name of the frontend endpoint.
+        :type name: str
         :return: The FrontendEndpoint instance.
         :rtype: pulumi_azure_native.cdn.AFDEndpoint
         """
         # Construct the FQDN using the record set name and the DNS zone name
-        fqdn = pulumi.Output.concat(dnsRecord.name, ".", dnsZone.name)
+        fqdn = pulumi.Output.concat(self.dns_record.name, ".", self.dns_zone.name)
 
         return pulumi_azure_native.cdn.AFDEndpoint(
             name,
-            resource_group_name=resourceGroup.name,
-            profile_name=frontDoor.name,
-            endpoint_name=endpointName,
+            resource_group_name=self.resource_group.name,
+            profile_name=self.front_door.name,
+            endpoint_name=self.endpoint_name,
         )
 
-    def __getattr__(self, attr):
+    # @override
+    def _post_create(self, resource: pulumi_azure_native.cdn.AFDEndpoint):
         """
-        Delegates attribute/method lookup to the wrapped instance.
-        :param attr: The attribute.
-        :type attr: Any
+        Post-create hook.
+        :param resource: The resource.
+        :type resource: pulumi_azure_native.cdn.AFDEndpoint
         """
-        return getattr(self._frontend_endpoint, attr)
+        resource.name.apply(lambda name: pulumi.export("frontend_endpoint", name))
 
 
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et

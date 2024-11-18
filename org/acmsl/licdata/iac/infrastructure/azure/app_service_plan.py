@@ -19,12 +19,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from pythoneda.shared import BaseObject
+from org.acmsl.licdata.iac.domain import Resource
+from .resource_group import ResourceGroup
 import pulumi
 import pulumi_azure_native
+from typing import override
 
 
-class AppServicePlan(BaseObject):
+class AppServicePlan(Resource):
     """
     Azure App Service Plan for Licdata.
 
@@ -37,61 +39,137 @@ class AppServicePlan(BaseObject):
         - None
     """
 
-    def __init__(self, resourceGroup: pulumi_azure_native.resources.ResourceGroup):
+    def __init__(
+        self,
+        stackName: str,
+        projectName: str,
+        location: str,
+        kind: str,
+        tierType: str,
+        tierName: str,
+        capacity: int,
+        targetWorkerCount: int,
+        resourceGroup: ResourceGroup,
+    ):
         """
         Creates a new AppServicePlan instance.
+        :param stackName: The name of the stack.
+        :type stackName: str
+        :param projectName: The name of the project.
+        :type projectName: str
+        :param location: The Azure location.
+        :type location: str
+        :param kind: The type of app service plan.
+        :type kind: str
+        :param tierType: The tier type.
+        :type tierType: str
+        :param tierName: The name of the tier.
+        :type tierName: str
+        :param capacity: The capacity.
+        :type capacity: int
+        :param targetWorkerCount: The number of workers.
+        :type targetWorkerCount: int
         :param resourceGroup: The ResourceGroup.
-        :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
+        :type resourceGroup: org.acmsl.licdata.infrastructure.azure.ResourceGroup
         """
-        super().__init__()
-        self._app_service_plan = self.create_app_service_plan("licenses", resourceGroup)
-        self._app_service_plan.name.apply(
-            lambda name: pulumi.export("app_service_plan", name)
+        super().__init__(
+            stackName, projectName, location, {"resource_group": resourceGroup}
         )
+        self._kind = kind
+        self._tier_type = tierType
+        self._tier_name = tierName
+        self._capacity = capacity
+        self._target_worker_count = targetWorkerCount
 
     @property
-    def app_service_plan(self) -> pulumi_azure_native.web.AppServicePlan:
+    def kind(self) -> str:
         """
-        Retrieves the App Service Plan.
-        :return: Such App Service Plan.
-        :rtype: pulumi_azure_native.web.AppServicePlan
+        Retrieves the kind of app service plan.
+        :return: Such kind.
+        :rtype: str
         """
-        return self._app_service_plan
+        return self._kind if self._kind is not None else "FunctionApp"
 
-    def create_app_service_plan(
-        self,
-        appServicePlanName: str,
-        resourceGroup: pulumi_azure_native.resources.ResourceGroup,
-    ) -> pulumi_azure_native.web.AppServicePlan:
+    @property
+    def tier_type(self) -> str:
         """
-        Creates an Azure App Service Plan.
-        :param appServicePlanName: The name of the App Service Plan.
-        :type appServicePlanName: str
-        :param resourceGroup: The Azure Resource Group.
-        :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
+        Retrieves the tier type.
+        :return: Such type.
+        :rtype: str
+        """
+        return self._tier_type if self._tier_name is not None else "Dynamic"
+
+    @property
+    def tier_name(self) -> str:
+        """
+        Retrieves the tier name.
+        :return: Such name.
+        :rtype: str
+        """
+        return self._tier_name if self._tier_name is not None else "S1"
+
+    @property
+    def capacity(self) -> int:
+        """
+        Retrieves the capacity.
+        :return: Such value.
+        :rtype: int
+        """
+        return self._capacity if self._capacity is not None else 1
+
+    @property
+    def target_worker_count(self) -> int:
+        """
+        Retrieves the target worker count.
+        :return: Such count.
+        :rtype: int
+        """
+        return self._target_worker_count if self._target_worker_count is not None else 1
+
+    # @override
+    def _build_name(self, stackName: str, projectName: str, location: str) -> str:
+        """
+        Builds the resource name.
+        :param stackName: The name of the stack.
+        :type stackName: str
+        :param projectName: The name of the project.
+        :type projectName: str
+        :param location: The Azure location.
+        :type location: str
+        :return: The resource name.
+        :rtype: str
+        """
+        return f"{stackName}-{projectName}-{location}-app-service-plan"
+
+    # @override
+    def _create(self, name: str) -> pulumi_azure_native.web.AppServicePlan:
+        """
+        Creates the resource.
+        :param name: The name of the resource.
+        :type name: str
         :return: The Azure App Service Plan.
         :rtype: pulumi_azure_native.web.AppServicePlan
         """
         return pulumi_azure_native.web.AppServicePlan(
-            appServicePlanName,
-            resource_group_name=resourceGroup.name,
-            kind="FunctionApp",
-            # sku=pulumi_azure_native.web.SkuDescriptionArgs(tier="Dynamic", name="Y1"),
+            name,
+            resource_group_name=self.resource_group.name,
+            kind=self.kind,
             sku=pulumi_azure_native.web.SkuDescriptionArgs(
-                tier="Dynamic", name="S1", capacity=1
+                tier=self.tier_type, name=self.tier_name, capacity=self.capacity
             ),
-            location=resourceGroup.location,
+            location=self.location,
             reserved=True,
-            target_worker_count=1,
+            target_worker_count=self.target_worker_count,
         )
 
-    def __getattr__(self, attr):
+    # @override
+    def _post_create(self, resource: pulumi_azure_native.web.AppServicePlan):
         """
-        Delegates attribute/method lookup to the wrapped instance.
-        :param attr: The attribute.
-        :type attr: Any
+        Post-create hook.
+        :param resource: The resource.
+        :type resource: pulumi_azure_native.web.AppServicePlan
         """
-        return getattr(self._app_service_plan, attr)
+        resource.name.apply(lambda name: pulumi.export("app_service_plan", name))
 
 
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et

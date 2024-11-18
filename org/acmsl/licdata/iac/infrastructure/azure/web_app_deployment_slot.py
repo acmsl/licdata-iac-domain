@@ -19,14 +19,16 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from pythoneda.shared import BaseObject
+from org.acmsl.licdata.iac.domain import Resource
+from .resource_group import ResourceGroup
 import pulumi
 import pulumi_azure_native
+from typing import override
 
 
-class WebAppDeploymentSlot(BaseObject):
+class WebAppDeploymentSlot(Resource):
     """
-    Logic to define deployment slots in Azure Webapps.
+    Logic to define deployment slots in Azure WebApps.
 
     Class name: WebAppDeploymentSlot
 
@@ -39,6 +41,9 @@ class WebAppDeploymentSlot(BaseObject):
 
     def __init__(
         self,
+        stackName: str,
+        projectName: str,
+        location: str,
         name: str,
         filePath: str,
         webApp: pulumi_azure_native.web.WebApp,
@@ -46,66 +51,82 @@ class WebAppDeploymentSlot(BaseObject):
     ):
         """
         Creates a new WebAppDeploymentSlot instance.
+        :param stackName: The name of the stack.
+        :type stackName: str
+        :param projectName: The name of the project.
+        :type projectName: str
+        :param location: The Azure location.
+        :type location: str
         :param name: The slot name.
         :type name: str
         :param filePath: The file path.
         :type filePath: str
-        :param webApp: The web app.
-        :type webApp: pulumi_azure_native.web.WebApp
         :param resourceGroup: The ResourceGroup.
         :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
         """
-        super().__init__()
-        self._webapp_deployment_slot = self.create_webapp_deployment_slot(
-            name, filePath, webApp, resourceGroup
+        super().__init__(
+            stackName, projectName, location, {"resource_group": resourceGroup}
         )
-        self._webapp_deployment_slot.name.apply(
-            lambda name: pulumi.export("webapp_deployment_slot", name)
-        )
+        self._name = name
+        self._file_path = filePath
 
     @property
-    def webapp_deployment_slot(self) -> pulumi_azure_native.web.WebAppDeploymentSlot:
+    def name(self) -> str:
         """
-        Retrieves the webapp deployment slot.
-        :return: Such slot.
-        :rtype: pulumi_azure_native.web.WebAppDeploymentSlot
+        Retrieves the slot name.
+        :return: Such name.
+        :rtype: str
         """
-        return self._webapp_deployment_slot
+        return self._name
 
-    def create_webapp_deployment_slot(
-        self,
-        name: str,
-        filePath: str,
-        webApp: pulumi_azure_native.web.WebApp,
-        resourceGroup: pulumi_azure_native.resources.ResourceGroup,
-    ) -> pulumi_azure_native.web.WebAppDeploymentSlot:
+    @property
+    def file_path(self) -> str:
+        """
+        Retrieves the file path.
+        :return: Such path.
+        :rtype: str
+        """
+        return self._file_path
+
+    # @override
+    def _build_name(self, stackName: str, projectName: str, location: str) -> str:
+        """
+        Builds the resource name.
+        :param stackName: The name of the stack.
+        :type stackName: str
+        :param projectName: The name of the project.
+        :type projectName: str
+        :param location: The Azure location.
+        :type location: str
+        :return: The resource name.
+        :rtype: str
+        """
+        return f"{stackName}-{projectName}-{location}-deployment-slot-{self.name}"
+
+    # @override
+    def _create(self, name: str) -> pulumi_azure_native.web.WebAppDeploymentSlot:
         """
         Creates a new WebAppDeploymentSlot instance.
-        :param name: The slot name.
+        :param name: The resource name.
         :type name: str
-        :param filePath: The file path.
-        :type filePath: str
-        :param webApp: The WebApp.
-        :type webApp: pulumi_azure_native.web.WebApp
-        :param resourceGroup: The ResourceGroup.
-        :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
         :return: The WebAppDeploymentSlot.
         :rtype: pulumi_azure_native.web.WebAppDeploymentSlot
         """
         return pulumi_azure_native.web.WebAppDeploymentSlot(
             name,
-            name=webApp.name,
-            resource_group_name=resourceGroup.name,
+            name=self.name,
+            resource_group_name=self.resource_group.name,
             package=pulumi.FileAsset(filePath),
         )
 
-    def __getattr__(self, attr):
+    # @override
+    def _post_create(self, resource: pulumi_azure_native.web.WebAppDeploymentSlot):
         """
-        Delegates attribute/method lookup to the wrapped instance.
-        :param attr: The attribute.
-        :type attr: Any
+        Post-create hook.
+        :param resource: The resource.
+        :type resource: pulumi_azure_native.web.WebAppDeploymentSlot
         """
-        return getattr(self._webapp_deployment_slot, attr)
+        resource.name.apply(lambda name: pulumi.export("webapp_deployment_slot", name))
 
 
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et

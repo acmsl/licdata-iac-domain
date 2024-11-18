@@ -19,12 +19,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from pythoneda.shared import BaseObject
+from org.acmsl.licdata.iac.domain import Resource
+from .resource_group import ResourceGroup
 import pulumi
 import pulumi_azure_native
+from typing import override
 
 
-class ApiManagementService(BaseObject):
+class ApiManagementService(Resource):
     """
     Azure ApiManagementService for Licdata.
 
@@ -37,80 +39,122 @@ class ApiManagementService(BaseObject):
         - None
     """
 
-    def __init__(self, resourceGroup: pulumi_azure_native.resources.ResourceGroup):
-        """
-        Creates a new ApiManagementService instance.
-        :param resourceGroup: The ResourceGroup.
-        :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
-        """
-        super().__init__()
-        self._api_management_service = self.create_api_managenent_service(
-            "licenses",
-            self.resource_group,
-            "admin@example.com",
-            "admin",
-            "Consumption",
-            0,
-        )
-        self._api_management_service.name.apply(
-            lambda name: pulumi.export(f"api_management_service", name)
-        )
-
-    @property
-    def api_management_service(
+    def __init__(
         self,
-    ) -> pulumi_azure_native.apimanagement.ApiManagementService:
-        """
-        Retrieves the API Management Service.
-        :return: Such API Management Service.
-        :rtype: pulumi_azure_native.apimanagement.ApiManagementService
-        """
-        return self._api_management_service
-
-    def create_api_managenent_service(
-        self,
-        name: str,
-        resourceGroup: pulumi_azure_native.resources.ResourceGroup,
-        email: str,
-        password: str,
+        publisher_email: str,
+        publisher_name: str,
         sku: str,
         capacity: int,
-    ) -> pulumi_azure_native.apimanagement.ApiManagementService:
+        resourceGroup: ResourceGroup,
+    ):
         """
-        Creates an Azure Api Management Service.
-        :param name: The name of the service.
-        :type name: str
-        :param resourceGroup: The ResourceGroup.
-        :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
-        :param email: The email of the service.
-        :type email: str
-        :param password: The password of the service.
-        :type password: str
+        Creates a new ApiManagementService instance.
+        :param stackName: The name of the stack.
+        :type stackName: str
+        :param projectName: The name of the project.
+        :type projectName: str
+        :param location: The Azure location.
+        :type location: str
+        :param publisher_email: The email of the publisher.
+        :type publisher_email: str
+        :param publisher_name: The name of the publisher.
+        :type publisher_name: str
         :param sku: The sku of the service.
         :type sku: str
         :param capacity: The capacity of the service.
         :type capacity: int
-        :return: The ApiManagementService instance.
-        :rtype: pulumi_azure_native.apimanagement.ApiManagementService
+        :param resourceGroup: The ResourceGroup.
+        :type resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup
+        """
+        super().__init__(
+            stackName, projectName, location, {"resource_group": resourceGroup}
+        )
+        self._publisher_email = publisherEmail
+        self._publisher_name = publisherName
+        self._sku = sku
+        self.capacity = capacity
+
+    @property
+    def publisher_email(self) -> str:
+        """
+        Retrieves the publisher's email.
+        :return: The publisher's email.
+        :rtype: str
+        """
+        return self._publisher_email
+
+    @property
+    def publisher_name(self) -> str:
+        """
+        Retrieves the name of the publisher.
+        :return: The name.
+        :rtype: str
+        """
+        return self._publisher_name
+
+    @property
+    def sku(self) -> str:
+        """
+        Retrieves the sku.
+        :return: The sku.
+        :rtype: str
+        """
+        return self._sku if self._sku is not None else "Consumption"
+
+    @property
+    def capacity(self) -> int:
+        """
+        Retrieves the capacity.
+        :return: The capacity.
+        :rtype: int
+        """
+        return self._capacity if self._capacity is not None else 0
+
+    # @override
+    def _build_name(self, stackName: str, projectName: str, location: str) -> str:
+        """
+        Builds the resource name.
+        :param stackName: The name of the stack.
+        :type stackName: str
+        :param projectName: The name of the project.
+        :type projectName: str
+        :param location: The Azure location.
+        :type location: str
+        :return: The resource name.
+        :rtype: str
+        """
+        return f"{stackName}-{projectName}-{location}-api-management-service"
+
+    # @override
+    def _create(self, name: str) -> Any:
+        """
+        Creates the resource.
+        :param name: The name of the resource.
+        :type name: str
+        :return: The resource.
+        :rtype: Any
         """
         return pulumi_azure_native.apimanagement.ApiManagementService(
             name=name,
-            resource_group_id=resourceGroup.id,
-            publisher_email=email,
-            publisher_name=name,
+            resource_group_id=self.resource_group.id,
+            publisher_email=self.publisher_email,
+            publisher_name=self.publisher_name,
             sku={
-                "name": sku,
-                "capacity": capacity,
+                "name": self.sku,
+                "capacity": self.capacity,
             },
         )
 
-    def __getattr__(self, attr):
+    # @override
+    def _post_create(
+        self, resource: pulumi_azure_native.apimanagement.ApiManagementService
+    ):
         """
-        Delegates attribute/method lookup to the wrapped instance.
-        :param attr: The attribute.
-        :type attr: Any
+        Post-create hook.
+        :param resource: The resource.
+        :type resource: pulumi_azure_native.apimanagement.ApiManagementService
         """
-        return getattr(self._api_management_service, attr)
+        resource.name.apply(lambda name: pulumi.export(f"api_management_service", name))
 
 
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et

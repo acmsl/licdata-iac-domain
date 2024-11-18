@@ -1,8 +1,8 @@
 # vim: set fileencoding=utf-8
 """
-org/acmsl/licdata/iac/infrastructure/azure/blob_container.py
+org/acmsl/licdata/iac/infrastructure/azure/table.py
 
-This script defines the BlobContainer class.
+This script defines the Table class.
 
 Copyright (C) 2024-today acmsl's licdata
 
@@ -21,20 +21,19 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from org.acmsl.licdata.iac.domain import Resource
 from .resource_group import ResourceGroup
-from .storage_account import StorageAccount
 import pulumi
 import pulumi_azure_native
 from typing import override
 
 
-class BlobContainer(Resource):
+class SessionsTable(Resource):
     """
-    A blob container in Azure.
+    Azure Table for Licdata.
 
-    Class name: BlobContainer
+    Class name: Table
 
     Responsibilities:
-        - Declares an Azure blob container.
+        - Define an Azure Table for Licdata.
 
     Collaborators:
         - None
@@ -45,21 +44,21 @@ class BlobContainer(Resource):
         stackName: str,
         projectName: str,
         location: str,
-        publicAccess: str,
-        storageAccount: StorageAccount,
-        resourceGroup: ResourceGroup,
+        name: str,
+        storageAccount: pulumi_azure_native.storage.StorageAccount,
+        resourceGroup: pulumi_azure_native.resources.ResourceGroup,
     ):
         """
-        Creates a new Blob Container instance.
+        Creates a new SessionsTable instance.
         :param stackName: The name of the stack.
         :type stackName: str
         :param projectName: The name of the project.
         :type projectName: str
         :param location: The Azure location.
         :type location: str
-        :param publicAccess: The public access type.
-        :type publicAccess
-        :param storageAccount: The storage account.
+        :param name: The table name.
+        :type name: str
+        :param storageAccount: The StorageAccount.
         :type storageAccount: pulumi_azure_native.storage.StorageAccount
         :param resourceGroup: The ResourceGroup.
         :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
@@ -70,16 +69,16 @@ class BlobContainer(Resource):
             location,
             {"storage_account": storageAccount, "resource_group": resourceGroup},
         )
-        self._public_access = publicAccess
+        self._name = name
 
     @property
-    def public_access(self) -> str:
+    def name(self) -> str:
         """
-        Retrieves the public access value.
-        :return: Such information.
+        Returns the table name.
+        :return: The table name.
         :rtype: str
         """
-        return self._public_access if self._public_access is not None else "Blob"
+        return self._name
 
     # @override
     def _build_name(self, stackName: str, projectName: str, location: str) -> str:
@@ -94,32 +93,32 @@ class BlobContainer(Resource):
         :return: The resource name.
         :rtype: str
         """
-        return f"{stackName}-{projectName}-{location}-blob-container"
+        return f"{stackName}-{projectName}-{location}-table-{self.name}"
 
     # @override
-    def _create(self, name: str) -> Any:
+    def _create(self, name: str) -> pulumi_azure_native.storage.Table:
         """
-        Creates a new Blob Container instance.
+        Creates a new table.
         :param name: The name of the resource.
         :type name: str
-        :return: The blob container.
-        :rtype: pulumi_azure_native.storage.BlobContainer
+        :return: The table.
+        :rtype: pulumi_azure_native.storage.Table
         """
-        return pulumi_azure_native.storage.BlobContainer(
+        return pulumi_azure_native.storage.Table(
             name,
             account_name=self.storage_account.name,
+            table_name=self.name,
             resource_group_name=self.resource_group.name,
-            public_access=self.public_access,
         )
 
     # @override
-    def _post_create(self, resource: pulumi_azure_native.storage.BlobContainer):
+    def _post_create(self, resource: pulumi_azure_native.storage.Table):
         """
         Post-create hook.
         :param resource: The resource.
-        :type resource: pulumi_azure_native.storage.BlobContainer
+        :type resource: pulumi_azure_native.storage.Table
         """
-        resource.name.apply(lambda name: pulumi.export("blob_container", name))
+        resource.name.apply(lambda name: pulumi.export("table", name))
 
 
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et

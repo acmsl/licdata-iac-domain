@@ -27,16 +27,16 @@ from .cosmosdb_database import CosmosdbDatabase
 from .cosmosdb_container import CosmosdbContainer
 from .storage_account import StorageAccount
 from .databases_storage_account import DatabasesStorageAccount
-from .sessions_table import SessionsTable
+from .table import Table
 from .app_service_plan import AppServicePlan
-from .function_app import FunctionApp
+from .web_app import WebApp
 from .function_storage_account import FunctionStorageAccount
 from .api_management_service import ApiManagementService
 from .api import Api
 from .public_ip_address import PublicIpAddress
 from .dns_zone import DnsZone
 from .dns_record import DnsRecord
-from .security_group import SecurityGroup
+from .network_security_group import NetworkSecurityGroup
 from .blob_container import BlobContainer
 from .blob import Blob
 from .functions_package import FunctionsPackage
@@ -46,6 +46,7 @@ from .web_app_deployment_slot import WebAppDeploymentSlot
 from .functions_deployment_slot import FunctionsDeploymentSlot
 from .app_insights import AppInsights
 from .container_registry import ContainerRegistry
+from .role_definition import RoleDefinition
 from .docker_pull_role_assignment import DockerPullRoleAssignment
 from .docker_pull_role_definition import DockerPullRoleDefinition
 from .pulumi_azure_stack import PulumiAzureStack

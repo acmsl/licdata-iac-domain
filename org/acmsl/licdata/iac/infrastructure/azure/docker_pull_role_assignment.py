@@ -19,12 +19,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from pythoneda.shared import BaseObject
+from org.acmsl.licdata.iac.domain import Resource
+from .resource_group import ResourceGroup
 import pulumi
 import pulumi_azure_native
+from typing import override
 
 
-class DockerPullRoleAssignment(BaseObject):
+class DockerPullRoleAssignment(Resource):
     """
     Azure Role Assignment for Licdata's Functions.
 
@@ -39,23 +41,42 @@ class DockerPullRoleAssignment(BaseObject):
 
     def __init__(
         self,
-        functionApp: pulumi_azure_native.web.WebApp,
-        roleDefinition: pulumi_azure_native.authorization.RoleDefinition,
-        containerRegistry: pulumi_azure_native.containerregistry.Registry,
-        resourceGroup: pulumi_azure_native.resources.ResourceGroup,
+        stackName: str,
+        projectName: str,
+        location: str,
+        functionApp: org.acmsl.licdata.iac.infrastructure.azure.FunctionApp,
+        roleDefinition: org.acmsl.licdata.iac.infrastructure.azure.RoleDefinition,
+        containerRegistry: org.acmsl.licdata.iac.infrastructure.azure.ContainerRegistry,
+        resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup,
     ):
         """
         Creates a new DockerPullRoleAssignment instance.
+        :param stackName: The name of the stack.
+        :type stackName: str
+        :param projectName: The name of the project.
+        :type projectName: str
+        :param location: The Azure location.
+        :type location: str
         :param functionApp: The Function App.
-        :type functionApp: pulumi_azure_native.web.WebApp
+        :type functionApp: org.acmsl.licdata.iac.infrastructure.azure.FunctionApp
         :param roleDefinition: The role definition.
-        :type roleDefinition: pulumi_azure_native.authorization.RoleDefinition
+        :type roleDefinition: org.acmsl.licdata.iac.infrastructure.azure.RoleDefinition
         :param containerRegistry: The container registry.
-        :type containerRegistry: pulumi_azure_native.containerregistry.Registry
+        :type containerRegistry: org.acmsl.licdata.iac.infrastructure.azure.ContainerRegistry
         :param resourceGroup: The ResourceGroup.
-        :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
+        :type resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup
         """
-        super().__init__()
+        super().__init__(
+            stackName,
+            projectName,
+            location,
+            {
+                "function_app": functionApp,
+                "role_definition": roleDefinition,
+                "containerRegistry": containerRegistry,
+                "resource_group": resourceGroup,
+            },
+        )
         self._role_assignment = self.create_role_assignment(
             "docker_pull_for_licenses_assignment",
             functionApp,
@@ -63,58 +84,50 @@ class DockerPullRoleAssignment(BaseObject):
             containerRegistry,
             resourceGroup,
         )
-        self._role_assignment.name.apply(
-            lambda name: pulumi.export(f"docker_pull_role_assignment", name)
-        )
 
-    @property
-    def role_assignment(self) -> pulumi_azure_native.authorization.RoleAssignment:
+    # @override
+    def _build_name(self, stackName: str, projectName: str, location: str) -> str:
         """
-        Retrieves the role assignment.
-        :return: Such instance.
-        :rtype: pulumi_azure_native.authorization.RoleAssignment
+        Builds the resource name.
+        :param stackName: The name of the stack.
+        :type stackName: str
+        :param projectName: The name of the project.
+        :type projectName: str
+        :param location: The Azure location.
+        :type location: str
+        :return: The resource name.
+        :rtype: str
         """
-        return self._role_assignment
+        return f"{stackName}-{projectName}-{location}-docker_pull_role_assignment"
 
-    def create_role_assignment(
-        self,
-        name: str,
-        functionApp: pulumi_azure_native.web.WebApp,
-        roleDefinition: pulumi_azure_native.authorization.RoleDefinition,
-        containerRegistry: pulumi_azure_native.containerregistry.Registry,
-        resourceGroup: pulumi_azure_native.resources.ResourceGroup,
-    ) -> pulumi_azure_native.authorization.RoleAssignment:
+    # @override
+    def _create(self, name: str) -> pulumi_azure_native.authorization.RoleAssignment:
         """
         Creates a role assignment for performing docker pulls.
         :param name: The name of the role assignment.
         :type name: str
-        :param functionApp: The Function App.
-        :type functionApp: pulumi_azure_native.web.WebApp
-        :param roleDefinition: The role definition.
-        :type roleDefinition: pulumi_azure_native.authorization.RoleDefinition
-        :param containerRegistry: The containerRegistry.
-        :type containerRegistry: pulumi_azure_native.containerregistry.Registry
-        :param resourceGroup: The Azure Resource Group.
-        :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
         :return: The Azure Function App.
         :rtype: pulumi_azure_native.authorization.RoleAssignment
         """
         # the role definition id comes from `az role definition list --name AcrPull`
         return pulumi_azure_native.authorization.RoleAssignment(
             name,
-            principal_id=functionApp.identity.principal_id,
+            principal_id=self.function_app.identity.principal_id,
             principal_type="ServicePrincipal",
-            role_definition_id=roleDefinition.id,
-            scope=containerRegistry.id,
+            role_definition_id=self.role_definition.id,
+            scope=self.container_registry.id,
         )
 
-    def __getattr__(self, attr):
+    # @override
+    def _post_create(self, resource: pulumi_azure_native.authorization.RoleAssignment):
         """
-        Delegates attribute/method lookup to the wrapped instance.
-        :param attr: The attribute.
-        :type attr: Any
+        Post-create hook.
+        :param resource: The resource.
+        :type resource: pulumi_azure_native.authorization.RoleAssignment
         """
-        return getattr(self._role_assignment, attr)
+        resource.name.apply(
+            lambda name: pulumi.export(f"docker_pull_role_assignment", name)
+        )
 
 
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et

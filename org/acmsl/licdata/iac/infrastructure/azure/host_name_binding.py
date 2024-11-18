@@ -19,13 +19,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from pythoneda.shared import BaseObject
+from org.acmsl.licdata.iac.domain import Resource
+from .resource_group import ResourceGroup
 import pulumi
 import pulumi_azure_native
-from typing import List
+from typing import override
 
 
-class HostNameBinding(BaseObject):
+class HostNameBinding(Resource):
     """
     A host name binding in Azure.
 
@@ -40,71 +41,99 @@ class HostNameBinding(BaseObject):
 
     def __init__(
         self,
-        dnsRecord: pulumi_azure_native.network.RecordSet,
-        functionApp: pulumi_azure_native.web.WebApp,
-        resourceGroup: pulumi_azure_native.resources.ResourceGroup,
+        stackName: str,
+        projectName: str,
+        location: str,
+        hostNameType: str,
+        customHostName: str,
+        dnsRecord: org.acmsl.licdata.iac.infrastructure.azure.DnsRecord,
+        webApp: org.acmsl.licdata.iac.infrastructure.azure.WebApp,
+        resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup,
     ):
         """
         Creates a new HostNameBinding instance.
+        :param stackName: The name of the stack.
+        :type stackName: str
+        :param projectName: The name of the project.
+        :type projectName: str
+        :param location: The Azure location.
+        :type location: str
+        :param hostNameType: The host name type.
+        :type hostNameType: str
+        :param customHostName: The custom host name.
+        :type customHostName: str
         :param dnsRecord: The DNS record to bind.
-        :type dnsRecord: pulumi_azure_native.network.RecordSet
-        :param functionApp: The function app.
-        :type functionApp: pulumi_azure_native.web.WebApp
+        :type dnsRecord: org.acmsl.licdata.iac.infrastructure.azure.DnsRecord
+        :param webApp: The function app.
+        :type webApp: org.acmsl.licdata.iac.infrastructure.azure.WebApp
         :param resourceGroup: The ResourceGroup.
-        :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
+        :type resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup
         """
-        super().__init__()
-        self._host_name_binding = self.create_host_name_binding(
-            dnsRecord, functionApp, resourceGroup
-        )
-        self._host_name_binding.name.apply(
-            lambda name: pulumi.export("host_name_binding", name)
-        )
+        super().__init__(stackName, projectName, location, {"dns_record": dnsRecord, "web_app": webApp, "resource_group": resourceGroup})
+        self._host_name_type = hostNameType
+        self._custom_host_name = customHostName
 
     @property
-    def host_name_binding(self) -> pulumi_azure_native.web.HostNameBinding:
+    def host_name_type(self) -> str:
         """
-        Retrieves the host name binding.
-        :return: Such host name binding.
-        :rtype: pulumi_azure_native.web.HostNameBinding
+        Retrieves the host name type.
+        :return: Such type.
+        :rtype: str
         """
-        return self._host_name_binding
+        return self._host_name_type if self._host_name_type is not None else "Verified"
 
-    def create_host_name_binding(
-        self,
-        dnsRecord: pulumi_azure_native.network.RecordSet,
-        functionApp: pulumi_azure_native.web.WebApp,
-        resourceGroup: pulumi_azure_native.resources.ResourceGroup,
-    ) -> pulumi_azure_native.web.HostNameBinding:
+    @property
+    self custom_host_name(self) -> str:
+        """
+        Retrieves the custom host name.
+        :return: Such name.
+        :rtype: str
+        """
+        return self._custom_host_name
+
+    # @override
+    def _build_name(self, stackName: str, projectName: str, location: str) -> str:
+        """
+        Builds the resource name.
+        :param stackName: The name of the stack.
+        :type stackName: str
+        :param projectName: The name of the project.
+        :type projectName: str
+        :param location: The Azure location.
+        :type location: str
+        :return: The resource name.
+        :rtype: str
+        """
+        return f"{stackName}-{projectName}-{location}-host-name-binding"
+
+    # @override
+    def _create(self, name: str) -> pulumi_azure_native.web.HostNameBinding:
         """
         Creates a new HostNameBinding instance.
-        :param dnsRecord: The DNS record to bind.
-        :type dnsRecord: pulumi_azure_native.network.RecordSet
-        :param functionApp: The function app.
-        :type functionApp: pulumi_azure_native.web.WebApp
-        :param resourceGroup: The ResourceGroup.
-        :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
-        :return: The blob container.
-        :rtype: pulumi_azure_native.storage.BlobContainer
+        :return: The binding.
+        :rtype: pulumi_azure_native.web.HostNameBinding
         """
         return pulumi_azure_native.web.HostNameBinding(
-            dnsRecord.name.apply(lambda name: name),
-            name=dnsRecord.name,
-            site_name=functionApp.name,
-            host_name_type="Verified",
-            resource_group_name=resourceGroup.name,
+            name,
+            name=self.dns_record.name,
+            site_name=self.web_app.name,
+            host_name_type=self.host_name_type,
+            resource_group_name=self.resource_group.name,
             custom_host_name_binding_args=pulumi_azure_native.web.HostNameBindingArgs(
-                custom_host_name=custom_hostname
+                custom_host_name=self.custom_hostname
             ),
         )
 
-    def __getattr__(self, attr):
+    # @override
+    def _post_create(self, resource: pulumi_azure_native.web.HostNameBinding):
         """
-        Delegates attribute/method lookup to the wrapped instance.
-        :param attr: The attribute.
-        :type attr: Any
+        Post-create hook.
+        :param resource: The resource.
+        :type resource: pulumi_azure_native.web.HostNameBinding
         """
-        return getattr(self._host_name_binding, attr)
+        resource.name.apply(
+            lambda name: pulumi.export("host_name_binding", name)
+        )
 
 
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et

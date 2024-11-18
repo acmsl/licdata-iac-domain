@@ -19,14 +19,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from pythoneda.shared import BaseObject
+from org.acmsl.licdata.iac.domain import Resource
+from org.acmsl.licdata.iac.infrastructure.azure import ResourceGroup,
 import pulumi
 import pulumi_azure_native
-from pulumi_azure_native.storage import list_storage_account_keys
-from pulumi import Output
+from typing import override
 
 
-class AppInsights(BaseObject):
+class AppInsights(Resource):
     """
     Azure Application Insights for Licdata.
 
@@ -41,55 +41,96 @@ class AppInsights(BaseObject):
 
     def __init__(
         self,
-        resourceGroup: pulumi_azure_native.resources.ResourceGroup,
+        stackName: str,
+        projectName: str,
+        location: str,
+        kind: str,
+        ingestionMode: str,
+        resourceGroup: ResourceGroup,
     ):
         """
         Creates a new AppInsights instance.
+        :param stackName: The name of the stack.
+        :type stackName: str
+        :param projectName: The name of the project.
+        :type projectName: str
+        :param location: The Azure location.
+        :type location: str
+        :param kind: The type of resource.
+        :type kind:
+        :param ingestionMode: The ingestion mode.
+        :type ingestionMode: str
         :param resourceGroup: The ResourceGroup.
-        :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
+        :type resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup
         """
-        super().__init__()
-        self._app_insights = self.create_app_insights("licenses", resourceGroup)
-        self._app_insights.name.apply(lambda name: pulumi.export(f"app_insights", name))
+        super().__init__(
+            stackName, projectName, location, {"resource_group": resourceGroup}
+        )
+        self._kind = kind
+        self._ingestion_mode = ingestionMode
 
     @property
-    def app_insights(self) -> pulumi_azure_native.insights.Component:
+    def kind(self) -> str:
         """
-        Retrieves the app insights.
-        :return: Such component.
-        :rtype: pulumi_azure_native.insights.Component
+        Retrieves the type of App Insights.
+        :return: Such type.
+        :rtype: str
         """
-        return self._app_insights
+        return self._kind if self._kind is not None else "web"
 
-    def create_app_insights(
-        self,
-        name: str,
-        resourceGroup: pulumi_azure_native.resources.ResourceGroup,
-    ) -> pulumi_azure_native.insights.Component:
+    @property
+    def ingestion_mode(self) -> str:
+        """
+        Retrieves the ingestion mode.
+        :return: Such mode.
+        :rtype: str
+        """
+        return (
+            self._ingestion_mode
+            if self._ingestion_mode is not None
+            else "ApplicationInsights"
+        )
+
+    # @override
+    def _build_name(self, stackName: str, projectName: str, location: str) -> str:
+        """
+        Builds the resource name.
+        :param stackName: The name of the stack.
+        :type stackName: str
+        :param projectName: The name of the project.
+        :type projectName: str
+        :param location: The Azure location.
+        :type location: str
+        :return: The resource name.
+        :rtype: str
+        """
+        return f"{stackName}-{projectName}-{location}-app-insights"
+
+    # @override
+    def _create(self, name: str) -> pulumi_azure_native.insights.Component:
         """
         Creates an App Insights component.
-        :param name: The name of the component.
+        :param name: The name of the resource.
         :type name: str
-        :param resourceGroup: The Azure Resource Group.
-        :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
         :return: The Azure App Insights component.
         :rtype: pulumi_azure_native.insights.Component
         """
         return pulumi_azure_native.insights.Component(
             name,
-            resource_group_name=resourceGroup.name,
-            location=resourceGroup.location,
-            kind="web",
-            ingestion_mode="ApplicationInsights",
+            resource_group_name=self.resource_group.name,
+            location=self.resource_group.location,
+            kind=self.kind,
+            ingestion_mode=self.ingestion_mode,
         )
 
-    def __getattr__(self, attr):
+    # @override
+    def _post_create(self, resource: pulumi_azure_native.insights.Component):
         """
-        Delegates attribute/method lookup to the wrapped instance.
-        :param attr: The attribute.
-        :type attr: Any
+        Post-create hook.
+        :param resource: The resource.
+        :type resource: pulumi_azure_native.insights.Component
         """
-        return getattr(self._app_insights, attr)
+        resource.name.apply(lambda name: pulumi.export(f"ApplicationInsights", name))
 
 
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et

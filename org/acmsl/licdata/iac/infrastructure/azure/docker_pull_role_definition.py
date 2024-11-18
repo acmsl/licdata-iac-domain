@@ -19,12 +19,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from pythoneda.shared import BaseObject
+from .resource_group import ResourceGroup
+from .role_definition import RoleDefinition
 import pulumi
 import pulumi_azure_native
+from typing import override
 
 
-class DockerPullRoleDefinition(BaseObject):
+class DockerPullRoleDefinition(RoleDefinition):
     """
     Azure Role Definition for Licdata's Functions.
 
@@ -39,73 +41,67 @@ class DockerPullRoleDefinition(BaseObject):
 
     def __init__(
         self,
-        containerRegistry: pulumi_azure_native.containerregistry.Registry,
-        resourceGroup: pulumi_azure_native.resources.ResourceGroup,
+        stackName: str,
+        projectName: str,
+        location: str,
+        containerRegistry: org.acmsl.licdata.iac.infrastructure.azure.ContainerRegistry,
+        resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup,
     ):
         """
-        Creates a new DockerPullRole instance.
+        Creates a new DockerPullRoleDefinition instance.
+        :param stackName: The name of the stack.
+        :type stackName: str
+        :param projectName: The name of the project.
+        :type projectName: str
+        :param location: The Azure location.
+        :type location: str
         :param containerRegistry: The container registry.
-        :type containerRegistry: pulumi_azure_native.containerregistry.Registry
+        :type containerRegistry: org.acmsl.licdata.iac.infrastructure.azure.ContainerRegistry
         :param resourceGroup: The ResourceGroup.
-        :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
+        :type resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup
         """
-        super().__init__()
-        self._role_definition = self.create_role_definition(
-            "docker_pull_for_licenses",
-            containerRegistry,
-            resourceGroup,
-        )
-        self._role_definition.name.apply(
-            lambda name: pulumi.export(f"docker_pull_role_definition", name)
-        )
-
-    @property
-    def role_definition(self) -> pulumi_azure_native.authorization.RoleDefinition:
-        """
-        Retrieves the role assignment.
-        :return: Such instance.
-        :rtype: pulumi_azure_native.authorization.Role
-        """
-        return self._role_definition
-
-    def create_role_definition(
-        self,
-        name: str,
-        containerRegistry: pulumi_azure_native.containerregistry.Registry,
-        resourceGroup: pulumi_azure_native.resources.ResourceGroup,
-    ) -> pulumi_azure_native.authorization.RoleDefinition:
-        """
-        Creates a role definition for performing docker pulls.
-        :param name: The name of the role.
-        :type name: str
-        :param containerRegistry: The containerRegistry.
-        :type containerRegistry: pulumi_azure_native.containerregistry.Registry
-        :param resourceGroup: The Azure Resource Group.
-        :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
-        :return: The Azure Function App.
-        :rtype: pulumi_azure_native.authorization.RoleDefinition
-        """
-        return pulumi_azure_native.authorization.RoleDefinition(
-            name,
-            role_name="ACR Pull Custom Role",
-            description="Custom role to allow managed identity to pull images from ACR",
-            assignable_scopes=[resourceGroup.id],
-            permissions=[
+        super().__init__(
+            stackName,
+            projectName,
+            location,
+            "ACR Pull Custom Role",
+            "Custom role to allow managed identity to pull images from ACR",
+            self.resource_group.id,
+            [self.resource_group.id],
+            [
                 {
                     "actions": ["Microsoft.ContainerRegistry/registries/pull/read"],
                     "notActions": [],
                 }
             ],
-            scope=resourceGroup.id,
+            {"resource_group": resourceGroup},
         )
 
-    def __getattr__(self, attr):
+    # @override
+    def _build_name(self, stackName: str, projectName: str, location: str) -> str:
         """
-        Delegates attribute/method lookup to the wrapped instance.
-        :param attr: The attribute.
-        :type attr: Any
+        Builds the resource name.
+        :param stackName: The name of the stack.
+        :type stackName: str
+        :param projectName: The name of the project.
+        :type projectName: str
+        :param location: The Azure location.
+        :type location: str
+        :return: The resource name.
+        :rtype: str
         """
-        return getattr(self._role_definition, attr)
+        return f"{stackName}-{projectName}-{location}-docker_pull_role_definition"
+
+    # @override
+    def _post_create(self, resource: pulumi_azure_native.authorization.RoleDefinition):
+        """
+        Post-create hook.
+        :param resource: The resource.
+        :type resource: pulumi_azure_native.authorization.RoleDefinition
+        """
+        resource.name.apply(
+            lambda name: pulumi.export(f"docker_pull_role_definition", name)
+        )
 
 
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et

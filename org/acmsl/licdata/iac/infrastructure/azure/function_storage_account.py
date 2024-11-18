@@ -37,16 +37,24 @@ class FunctionStorageAccount(StorageAccount):
         - None
     """
 
-    def __init__(self, resourceGroup: pulumi_azure_native.resources.ResourceGroup):
+    def __init__(
+        self, resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup
+    ):
         """
         Creates a new FunctionStorageAccount instance.
         :param resourceGroup: The ResourceGroup.
         :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
         """
         super().__init__("functions", resourceGroup)
-        self.storage_account.name.apply(
-            lambda name: pulumi.export(f"function_storage_account", name)
-        )
+
+    # @override
+    def _post_create(self, resource: pulumi_azure_native.storage.StorageAccount):
+        """
+        Post-create hook.
+        :param resource: The resource.
+        :type resource: pulumi_azure_native.storage.StorageAccount
+        """
+        resource.apply(lambda name: pulumi.export(f"function_storage_account", name))
 
 
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et

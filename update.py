@@ -6,6 +6,6 @@ from org.acmsl.licdata.iac.application import LicdataIacApp
 
 asyncio.run(
     LicdataIacApp().accept_pulumi_options(
-        {"stackName": "dev", "projectName": "licdata-iac", "location": "westeurope"}
+        {"stackName": "dev", "projectName": "licdata", "location": "westeurope"}
     )
 )

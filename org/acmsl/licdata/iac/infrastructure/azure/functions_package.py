@@ -39,18 +39,18 @@ class FunctionsPackage(Blob):
 
     def __init__(
         self,
-        blobContainer: pulumi_azure_native.storage.BlobContainer,
-        storageAccount: pulumi_azure_native.storage.StorageAccount,
-        resourceGroup: pulumi_azure_native.resources.ResourceGroup,
+        blobContainer: org.acmsl.licdata.iac.infrastructure.azure.BlobContainer,
+        storageAccount: org.acmsl.licdata.iac.infrastructure.azure.StorageAccount,
+        resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup,
     ):
         """
         Creates a new FunctionsPackage instance.
         :param blobContainer: The blob container.
-        :type blobContainer: pulumi_azure_native.storage.BlobContainer
+        :type blobContainer: org.acmsl.licdata.iac.infrastructure.azure.BlobContainer
         :param storageAccount: The storage account.
-        :type storageAccount: pulumi_azure_native.storage.StorageAccount
+        :type storageAccount: org.acmsl.licdata.iac.infrastructure.azure.StorageAccount
         :param resourceGroup: The ResourceGroup.
-        :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
+        :type resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup
         """
         super().__init__(
             "rest.zip",

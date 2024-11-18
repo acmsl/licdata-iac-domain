@@ -24,6 +24,7 @@ __path__ = __import__("pkgutil").extend_path(__path__, __name__)
 from .infrastructure_update_requested import InfrastructureUpdateRequested
 from .infrastructure_updated import InfrastructureUpdated
 from .licdata_iac import LicdataIac
+from .resource import Resource
 from .stack import Stack
 from .stack_factory import StackFactory
 

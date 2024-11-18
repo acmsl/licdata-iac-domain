@@ -19,9 +19,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from .storage_account import StorageAccount
+from .resource_group import ResourceGroup
 import pulumi
 import pulumi_azure_native
+from typing import override
 
 
 class DatabasesStorageAccount(StorageAccount):
@@ -37,14 +38,22 @@ class DatabasesStorageAccount(StorageAccount):
         - None
     """
 
-    def __init__(self, resourceGroup: pulumi_azure_native.resources.ResourceGroup):
+    def __init__(self, resourceGroup: ResourceGroup):
         """
         Creates a new StorageAccount instance.
         :param resourceGroup: The ResourceGroup.
-        :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
+        :type resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup
         """
         super().__init__("databases", resourceGroup)
-        self.storage_account.name.apply(
+
+    # @override
+    def _post_create(self, resource: pulumi_azure_native.storage.StorageAccount):
+        """
+        Post-create hook.
+        :param resource: The resource.
+        :type resource: pulumi_azure_native.storage.StorageAccount
+        """
+        resource.name.apply(
             lambda name: pulumi.export(f"databases_storage_account", name)
         )
 

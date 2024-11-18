@@ -23,7 +23,7 @@ from org.acmsl.licdata.iac.infrastructure import PulumiStack
 from .resource_group import ResourceGroup
 from .function_storage_account import FunctionStorageAccount
 from .app_service_plan import AppServicePlan
-from .function_app import FunctionApp
+from .web_app import WebApp
 from .public_ip_address import PublicIpAddress
 from .dns_zone import DnsZone
 from .dns_record import DnsRecord
@@ -214,44 +214,67 @@ class PulumiAzureStack(PulumiStack):
         """
         Creates the infrastructure.
         """
-        self._resource_group = ResourceGroup(self.location)
-        self._function_storage_account = FunctionStorageAccount(self._resource_group)
-        self._app_service_plan = AppServicePlan(self._resource_group)
-        # self._public_ip_address = PublicIpAddress(self._resource_group)
-        # self._dns_zone = DnsZone(self._resource_group)
+        self._resource_group = ResourceGroup(
+            self.stack_name, self.project_name, self.location
+        )
+        self._function_storage_account = FunctionStorageAccount(
+            self.stack_name, self.project_name, self.location, self._resource_group
+        )
+        self._app_service_plan = AppServicePlan(
+            self.stack_name, self.project_name, self.location, self._resource_group
+        )
+        # self._public_ip_address = PublicIpAddress(self.stack_name, self.project_name, self.location, self._resource_group)
+        # self._dns_zone = DnsZone(self.stack_name, self.project_name, self.location, self._resource_group)
         # self._dns_record = DnsRecord(
         #    self._public_ip_address,
         #    self._dns_zone,
+        #    self.stack_name,
+        #    self.project_name,
+        #    self.location,
         #    self._resource_group,
         # )
         # self._blob_container = BlobContainer(
-        #     self._function_storage_account, self._resource_group
+        #     self._function_storage_account, self.stack_name, self.project_name, self.location, self._resource_group
         # )
         # self._functions_package = FunctionsPackage(
-        #     self._blob_container, self._function_storage_account, self._resource_group
+        #     self._blob_container, self._function_storage_account, self.stack_name, self.project_name, self.location, self._resource_group
         # )
-        self._app_insights = AppInsights(self._resource_group)
+        self._app_insights = AppInsights(
+            self.stack_name, self.project_name, self.location, self._resource_group
+        )
 
-        self._container_registry = ContainerRegistry(self._resource_group)
+        self._container_registry = ContainerRegistry(
+            self.stack_name, self.project_name, self.location, self._resource_group
+        )
 
         self._function_app = FunctionApp(
             self._app_insights,
             self._function_storage_account,
             self._app_service_plan,
             self._container_registry,
+            self.stack_name,
+            self.project_name,
+            self.location,
             self._resource_group,
         )
         # self._webapp_deployment_slot = FunctionsDeploymentSlot(
         #     self._function_app, self._resource_group
         # )
         self._docker_pull_role_definition = DockerPullRoleDefinition(
-            self._container_registry, self._resource_group
+            self._container_registry,
+            self.stack_name,
+            self.project_name,
+            self.location,
+            self._resource_group,
         )
 
         self._docker_pull_role_assignment = DockerPullRoleAssignment(
             self._function_app,
             self._docker_pull_role_definition,
             self._container_registry,
+            self.stack_name,
+            self.project_name,
+            self.location,
             self._resource_group,
         )
 
