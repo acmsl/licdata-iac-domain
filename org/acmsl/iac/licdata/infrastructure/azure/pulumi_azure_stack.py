@@ -22,7 +22,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from org.acmsl.iac.licdata.infrastructure import PulumiStack
 from .functions_package import FunctionsPackage
 from .functions_deployment_slot import FunctionsDeploymentSlot
-from pythoneda.iac.pulumi.azure import AppInsights, AppServicePlan, BlobContainer, ContainerRegistry, DnsRecord, DnsZone, DockerPullRoleAssignment, DockerPullRoleDefinition, FunctionStorageAccount, PublicIpAddress, ResourceGroup, WebApp
+from .licdata_web_app import LicdataWebApp
+from pythoneda.iac.pulumi.azure import AppInsights, AppServicePlan, BlobContainer, ContainerRegistry, DnsRecord, DnsZone, DockerPullRoleAssignment, DockerPullRoleDefinition, FunctionStorageAccount, PublicIpAddress, ResourceGroup
 
 
 class PulumiAzureStack(PulumiStack):
