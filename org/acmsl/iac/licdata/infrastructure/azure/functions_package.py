@@ -19,12 +19,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from .blob import Blob
-from .blob_container import BlobContainer
-from .storage_account import StorageAccount
-from .resource_group import ResourceGroup
-import pulumi
-import pulumi_azure_native
+from pythoneda.iac.pulumi.azure import (
+    Blob,
+    BlobContainer,
+    StorageAccount,
+    ResourceGroup,
+)
 
 
 class FunctionsPackage(Blob):
@@ -49,11 +49,11 @@ class FunctionsPackage(Blob):
         """
         Creates a new FunctionsPackage instance.
         :param blobContainer: The blob container.
-        :type blobContainer: org.acmsl.iac.licdata.infrastructure.azure.BlobContainer
+        :type blobContainer: pythoneda.iac.pulumi.azure.BlobContainer
         :param storageAccount: The storage account.
-        :type storageAccount: org.acmsl.iac.licdata.infrastructure.azure.StorageAccount
+        :type storageAccount: pythoneda.iac.pulumi..azure.StorageAccount
         :param resourceGroup: The ResourceGroup.
-        :type resourceGroup: org.acmsl.iac.licdata.infrastructure.azure.ResourceGroup
+        :type resourceGroup: pythoneda.iac.pulumi.azure.ResourceGroup
         """
         super().__init__(
             "rest.zip",

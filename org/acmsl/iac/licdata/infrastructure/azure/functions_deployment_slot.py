@@ -45,11 +45,11 @@ class FunctionsDeploymentSlot(WebAppDeploymentSlot):
         resourceGroup: ResourceGroup,
     ):
         """
-        Creates a new WebAppDeploymentSlot instance.
+        Creates a new FunctionsDeploymentSlot instance.
         :param webApp: The web app.
-        :type webApp: org.acmsl.iac.licdata.infrastructure.azure.WebApp
+        :type webApp: pythoneda.iac.pulumi.azure.WebApp
         :param resourceGroup: The ResourceGroup.
-        :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
+        :type resourceGroup: pythoneda.iac.pulumi.azure.ResourceGroup
         """
         super().__init__("license_functions", "./rest.zip", webApp, resourceGroup)
 

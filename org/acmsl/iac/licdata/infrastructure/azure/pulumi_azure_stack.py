@@ -20,20 +20,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from org.acmsl.iac.licdata.infrastructure import PulumiStack
-from .resource_group import ResourceGroup
-from .function_storage_account import FunctionStorageAccount
-from .app_service_plan import AppServicePlan
-from .public_ip_address import PublicIpAddress
-from .dns_zone import DnsZone
-from .dns_record import DnsRecord
-from .blob_container import BlobContainer
 from .functions_package import FunctionsPackage
 from .functions_deployment_slot import FunctionsDeploymentSlot
-from .app_insights import AppInsights
-from .container_registry import ContainerRegistry
-from .docker_pull_role_definition import DockerPullRoleDefinition
-from .docker_pull_role_assignment import DockerPullRoleAssignment
-from .web_app import WebApp
+from pythoneda.iac.pulumi.azure import AppInsights, AppServicePlan, BlobContainer, ContainerRegistry, DnsRecord, DnsZone, DockerPullRoleAssignment, DockerPullRoleDefinition, FunctionStorageAccount, PublicIpAddress, ResourceGroup, WebApp
 
 
 class PulumiAzureStack(PulumiStack):
@@ -80,7 +69,7 @@ class PulumiAzureStack(PulumiStack):
         """
         Creates an instance.
         :return: The new instance.
-        :rtype: org.acmsl.iac.licdata.infrastructure.azure.PulumiAzureStackFactory
+        :rtype: pythoneda.iac.pulumi.azure.PulumiAzureStackFactory
         """
         raise InvalidOperationError("Cannot instantiate PulumiAzureStack directly")
 
@@ -98,7 +87,7 @@ class PulumiAzureStack(PulumiStack):
         """
         Retrieves the Azure Function Storage Account.
         :return: Such Function Storage Account.
-        :rtype: org.acmsl.iac.licdata.infrastructure.azure.FunctionStorageAccount
+        :rtype: pythoneda.iac.pulumi.azure.FunctionStorageAccount
         """
         return self._function_storage_account
 
@@ -107,7 +96,7 @@ class PulumiAzureStack(PulumiStack):
         """
         Retrieves the Azure App Service Plan.
         :return: Such App Service Plan.
-        :rtype: org.acmsl.iac.licdata.infrastructure.azure.AppServicePlan
+        :rtype: pythoneda.iac.pulumi.azure.AppServicePlan
         """
         return self._app_service_plan
 
@@ -116,7 +105,7 @@ class PulumiAzureStack(PulumiStack):
         """
         Retrieves the Azure WebApp.
         :return: Such WebApp.
-        :rtype: org.acmsl.iac.licdata.infrastructure.azure.WebApp
+        :rtype: pythoneda.iac.pulumi.azure.WebApp
         """
         return self._web_app
 
@@ -125,7 +114,7 @@ class PulumiAzureStack(PulumiStack):
         """
         Retrieves the Azure Public IP Address.
         :return: Such Public IP Address.
-        :rtype: org.acmsl.iac.licdata.infrastructure.azure.PublicIpAddress
+        :rtype: pythoneda.iac.pulumi.azure.PublicIpAddress
         """
         return self._public_ip_address
 
@@ -134,7 +123,7 @@ class PulumiAzureStack(PulumiStack):
         """
         Retrieves the Azure DNS Zone.
         :return: Such DNS Zone.
-        :rtype: org.acmsl.iac.licdata.infrastructure.azure.DnsZone
+        :rtype: pythoneda.iac.pulumi.azure.DnsZone
         """
         return self._dns_zone
 
@@ -143,7 +132,7 @@ class PulumiAzureStack(PulumiStack):
         """
         Retrieves the Azure DNS Record.
         :return: Such DNS Record.
-        :rtype: org.acmsl.iac.licdata.infrastructure.azure.DnsRecord
+        :rtype: pythoneda.iac.pulumi.azure.DnsRecord
         """
         return self._dns_record
 
@@ -152,7 +141,7 @@ class PulumiAzureStack(PulumiStack):
         """
         Retrieves the Azure Blob Container.
         :return: Such Blob Container.
-        :rtype: org.acmsl.iac.licdata.infrastructure.azure.BlobContainer
+        :rtype: pythoneda.iac.pulumi.azure.BlobContainer
         """
         return self._blob_container
 
@@ -161,7 +150,7 @@ class PulumiAzureStack(PulumiStack):
         """
         Retrieves the Azure Functions Package.
         :return: Such Functions Package.
-        :rtype: org.acmsl.iac.licdata.infrastructure.azure.FunctionsPackage
+        :rtype: pythoneda.iac.pulumi.azure.FunctionsPackage
         """
         return self._functions_package
 
@@ -170,7 +159,7 @@ class PulumiAzureStack(PulumiStack):
         """
         Retrieves the Azure Functions Deployment Slot.
         :return: Such Functions Deployment Slot.
-        :rtype: org.acmsl.iac.licdata.infrastructure.azure.FunctionsDeploymentSlot
+        :rtype: pythoneda.iac.pulumi.azure.FunctionsDeploymentSlot
         """
         return self._webapp_deployment_slot
 
@@ -179,7 +168,7 @@ class PulumiAzureStack(PulumiStack):
         """
         Retrieves the Azure App Insights instance.
         :return: Such instance.
-        :rtype: org.acmsl.iac.licdata.infrastructure.azure.AppInsights
+        :rtype: pythoneda.iac.pulumi.azure.AppInsights
         """
         return self._app_insights
 
@@ -188,7 +177,7 @@ class PulumiAzureStack(PulumiStack):
         """
         Retrieves the Azure Container Registry instance.
         :return: Such instance.
-        :rtype: org.acmsl.iac.licdata.infrastructure.azure.ContainerRegistry
+        :rtype: pythoneda.iac.pulumi.azure.ContainerRegistry
         """
         return self._container_registry
 
@@ -197,7 +186,7 @@ class PulumiAzureStack(PulumiStack):
         """
         Retrieves the Role Definition allowing the functions to perform Docker pulls.
         :return: Such instance.
-        :rtype: org.acmsl.iac.licdata.infrastructure.azure.DorkecPullRoleDefinition
+        :rtype: pythoneda.iac.pulumi.azure.DorkecPullRoleDefinition
         """
         return self._docker_pull_role_definition
 
@@ -206,7 +195,7 @@ class PulumiAzureStack(PulumiStack):
         """
         Retrieves the Role Assignment allowing the functions to perform Docker pulls.
         :return: Such instance.
-        :rtype: org.acmsl.iac.licdata.infrastructure.azure.DockerPullRoleAssignment
+        :rtype: pythoneda.iac.pulumi.azure.DockerPullRoleAssignment
         """
         return self._docker_pull_role_assignment
 

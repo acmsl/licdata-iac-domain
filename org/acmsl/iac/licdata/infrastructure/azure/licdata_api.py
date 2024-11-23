@@ -1,8 +1,8 @@
 # vim: set fileencoding=utf-8
 """
-org/acmsl/iac/licdata/infrastructure/azure/azure_resource.py
+org/acmsl/iac/licdata/infrastructure/azure/api.py
 
-This script defines the AzureResource class.
+This script defines the Api class.
 
 Copyright (C) 2024-today acmsl's Licdata IaC
 
@@ -19,65 +19,52 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from org.acmsl.iac.licdata.domain import Resource
-import abc
-from typing import Any, Dict
+from pythoneda.iac.pulumi.azure import Api, ApiManagementService, ResourceGroup
 
 
-class AzureResource(Resource, abc.ABC):
+class LicdataApi(Api):
     """
-    Azure resources.
+    Azure Api for Licdata.
 
-    Class name: AzureResource
+    Class name: Api
 
     Responsibilities:
-        - Represent an infrastructure resource in Azure.
+        - Define the Azure Api for Licdata.
 
     Collaborators:
         - None
     """
-
-    _location_abbrevs = {"westeurope": "we", "unknown": "unk"}
 
     def __init__(
         self,
         stackName: str,
         projectName: str,
         location: str,
-        dependencies: Dict[str, Any],
+        apiManagementService: ApiManagementService,
+        resourceGroup: ResourceGroup,
     ):
         """
-        Creates a new Resource instance.
+        Creates a new Api instance.
         :param stackName: The name of the stack.
         :type stackName: str
         :param projectName: The name of the project.
         :type projectName: str
         :param location: The Azure location.
         :type location: str
-        :param dependencies: The dependencies.
-        :type dependencies: Dict[str, Any]
+        :param apiManagementService: The ApiManagementService.
+        :type apiManagementService: org.acmsl.iac.licdata.infrastructure.azure.ApiManagementService
+        :param resourceGroup: The ResourceGroup.
+        :type resourceGroup: org.acmsl.iac.licdata.infrastructure.azure.ResourceGroup
         """
-        super().__init__(stackName, projectName, location, dependencies)
-
-    @property
-    def max_length(self) -> int:
-        """
-        The maximum length of the resource name.
-        :return: The maximum length.
-        :rtype: int
-        """
-        return 16
-
-    @classmethod
-    def _location_abbrev(cls, location: str) -> str:
-        """
-        Abbreaviates the location.
-        :param location: The location.
-        :type location: str
-        :return: The abbreviated location.
-        :rtype: str
-        """
-        return cls._location_abbrevs.get(location, cls._location_abbrevs["unknown"])
+        super().__init__(
+            stackName,
+            projectName,
+            location,
+            "licenses",
+            ["https"],
+            apiManagementService,
+            resourceGroup,
+        )
 
 
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et

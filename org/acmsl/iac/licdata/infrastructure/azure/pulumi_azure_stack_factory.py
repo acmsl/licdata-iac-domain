@@ -19,8 +19,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from org.acmsl.iac.licdata.domain import StackFactory
-from org.acmsl.iac.licdata.infrastructure.azure import PulumiAzureStack
+from pythoneda.iac import StackFactory
+from .pulumi_azure_stack import PulumiAzureStack
 
 
 class PulumiAzureStackFactory(StackFactory):
