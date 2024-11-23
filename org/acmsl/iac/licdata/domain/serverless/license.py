@@ -1,8 +1,8 @@
 # vim: set fileencoding=utf-8
 """
-org/acmsl/__init__.py
+org/acmsl/iac/licdata/domain/serverless/license.py
 
-This file ensures org.acmsl is a package.
+This script defines the License class.
 
 Copyright (C) 2024-today acmsl's Licdata IaC
 
@@ -19,13 +19,27 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-__path__ = __import__("pkgutil").extend_path(__path__, __name__)
+from pythoneda.shared import Port
+
+
+class License(Port):
+    """
+    Serverless package for License code.
+
+    Class name: License
+
+    Responsibilities:
+        - Provide the serverless package with License code.
+
+    Collaborators:
+        - None
+    """
+
+    def __init__(self):
+        """
+        Creates a new Serverless instance.
+        """
+        super().__init__()
+
 
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et
-# Local Variables:
-# mode: python
-# python-indent-offset: 4
-# tab-width: 4
-# indent-tabs-mode: nil
-# fill-column: 79
-# End:

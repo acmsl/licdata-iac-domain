@@ -1,8 +1,8 @@
 # vim: set fileencoding=utf-8
 """
-org/acmsl/__init__.py
+org/acmsl/iac/licdata/domain/serverless/__init__.py
 
-This file ensures org.acmsl is a package.
+This file ensures org.acmsl.iac.licdata.domain.serverless is a package.
 
 Copyright (C) 2024-today acmsl's Licdata IaC
 

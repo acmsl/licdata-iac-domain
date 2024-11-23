@@ -1,8 +1,8 @@
 # vim: set fileencoding=utf-8
 """
-org/acmsl/__init__.py
+org/acmsl/iac/licdata/infrastructure/__init__.py
 
-This file ensures org.acmsl is a package.
+This file ensures org.acmsl.iac.licdata.infrastructure is a package.
 
 Copyright (C) 2024-today acmsl's Licdata IaC
 
@@ -20,6 +20,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 __path__ = __import__("pkgutil").extend_path(__path__, __name__)
+
+from .pulumi_stack import PulumiStack
 
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et
 # Local Variables:
