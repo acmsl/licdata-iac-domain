@@ -19,16 +19,19 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from org.acmsl.licdata.iac.domain import Resource
+from .azure_resource import AzureResource
+from .app_insights import AppInsights
+from .app_service_plan import AppServicePlan
+from .container_registry import ContainerRegistry
 from .resource_group import ResourceGroup
+from .storage_account import StorageAccount
 import pulumi
 import pulumi_azure_native
 from pulumi_azure_native.storage import list_storage_account_keys
 from pulumi import Output
-from typing import override
 
 
-class WebApp(Resource):
+class WebApp(AzureResource):
     """
     Azure Web App for Licdata.
 
@@ -46,11 +49,11 @@ class WebApp(Resource):
         stackName: str,
         projectName: str,
         location: str,
-        appInsights: org.acmsl.licdata.iac.infrastructure.azure.AppInsights,
-        storageAccount: org.acmsl.licdata.iac.infrastructure.azure.StorageAccount,
-        appServicePlan: org.acmsl.licdata.iac.infrastructure.azure.AppServicePlan,
-        containerRegistry: org.acmsl.licdata.iac.infrastructure.azure.ContainerRegistry,
-        resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup,
+        appInsights: AppInsights,
+        storageAccount: StorageAccount,
+        appServicePlan: AppServicePlan,
+        containerRegistry: ContainerRegistry,
+        resourceGroup: ResourceGroup,
     ):
         """
         Creates a new WebApp instance.
@@ -78,13 +81,14 @@ class WebApp(Resource):
             {
                 "app_insights": appInsights,
                 "storage_account": storageAccount,
+                "app_service_plan": appServicePlan,
                 "container_registry": containerRegistry,
                 "resource_group": resourceGroup,
             },
         )
 
     # @override
-    def _build_name(self, stackName: str, projectName: str, location: str) -> str:
+    def _resource_name(self, stackName: str, projectName: str, location: str) -> str:
         """
         Builds the resource name.
         :param stackName: The name of the stack.
@@ -96,7 +100,7 @@ class WebApp(Resource):
         :return: The resource name.
         :rtype: str
         """
-        return f"{stackName}-{projectName}-{location}-web-app"
+        return "wa"
 
     # @override
     def _create(self, name: str) -> pulumi_azure_native.web.WebApp:
@@ -199,16 +203,10 @@ class WebApp(Resource):
                         value=f"https://{login_server}",
                     ),
                     pulumi_azure_native.web.NameValuePairArgs(
-                        name="DOCKER_REGISTRY_SERVER_USERNAME",
-                        value=self.container_registry.admin_user_enabled.apply(
-                            lambda enabled: acr_username if enabled else ""
-                        ),
+                        name="DOCKER_REGISTRY_SERVER_USERNAME", value=acr_username
                     ),
                     pulumi_azure_native.web.NameValuePairArgs(
-                        name="DOCKER_REGISTRY_SERVER_PASSWORD",
-                        value=self.container_registry.admin_user_enabled.apply(
-                            lambda enabled: (acr_password if enabled else "")
-                        ),
+                        name="DOCKER_REGISTRY_SERVER_PASSWORD", value=acr_password
                     ),
                     pulumi_azure_native.web.NameValuePairArgs(
                         name="WEBSITES_PORT", value="80"

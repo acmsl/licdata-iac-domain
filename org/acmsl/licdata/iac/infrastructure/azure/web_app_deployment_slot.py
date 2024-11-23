@@ -19,14 +19,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from org.acmsl.licdata.iac.domain import Resource
+from .azure_resource import AzureResource
 from .resource_group import ResourceGroup
+from .web_app import WebApp
 import pulumi
 import pulumi_azure_native
-from typing import override
 
 
-class WebAppDeploymentSlot(Resource):
+class WebAppDeploymentSlot(AzureResource):
     """
     Logic to define deployment slots in Azure WebApps.
 
@@ -46,8 +46,8 @@ class WebAppDeploymentSlot(Resource):
         location: str,
         name: str,
         filePath: str,
-        webApp: pulumi_azure_native.web.WebApp,
-        resourceGroup: pulumi_azure_native.resources.ResourceGroup,
+        webApp: WebApp,
+        resourceGroup: ResourceGroup,
     ):
         """
         Creates a new WebAppDeploymentSlot instance.
@@ -61,11 +61,16 @@ class WebAppDeploymentSlot(Resource):
         :type name: str
         :param filePath: The file path.
         :type filePath: str
+        :param webApp: The WebApp.
+        :type webApp: org.acmsl.licdata.iac.infrastructure.azure.WebApp
         :param resourceGroup: The ResourceGroup.
-        :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
+        :type resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup
         """
         super().__init__(
-            stackName, projectName, location, {"resource_group": resourceGroup}
+            stackName,
+            projectName,
+            location,
+            {"web_app": webApp, "resource_group": resourceGroup},
         )
         self._name = name
         self._file_path = filePath
@@ -89,7 +94,7 @@ class WebAppDeploymentSlot(Resource):
         return self._file_path
 
     # @override
-    def _build_name(self, stackName: str, projectName: str, location: str) -> str:
+    def _resource_name(self, stackName: str, projectName: str, location: str) -> str:
         """
         Builds the resource name.
         :param stackName: The name of the stack.
@@ -101,7 +106,7 @@ class WebAppDeploymentSlot(Resource):
         :return: The resource name.
         :rtype: str
         """
-        return f"{stackName}-{projectName}-{location}-deployment-slot-{self.name}"
+        return f"wads{self.name}"
 
     # @override
     def _create(self, name: str) -> pulumi_azure_native.web.WebAppDeploymentSlot:

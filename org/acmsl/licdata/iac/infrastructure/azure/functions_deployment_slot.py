@@ -19,6 +19,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from .resource_group import ResourceGroup
+from .web_app import WebApp
 from .web_app_deployment_slot import WebAppDeploymentSlot
 import pulumi
 import pulumi_azure_native
@@ -39,8 +41,8 @@ class FunctionsDeploymentSlot(WebAppDeploymentSlot):
 
     def __init__(
         self,
-        webApp: org.acmsl.licdata.iac.infrastructure.azure.WebApp,
-        resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup,
+        webApp: WebApp,
+        resourceGroup: ResourceGroup,
     ):
         """
         Creates a new WebAppDeploymentSlot instance.
@@ -50,6 +52,21 @@ class FunctionsDeploymentSlot(WebAppDeploymentSlot):
         :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
         """
         super().__init__("license_functions", "./rest.zip", webApp, resourceGroup)
+
+    # @override
+    def _resource_name(self, stackName: str, projectName: str, location: str) -> str:
+        """
+        Builds the resource name.
+        :param stackName: The name of the stack.
+        :type stackName: str
+        :param projectName: The name of the project.
+        :type projectName: str
+        :param location: The Azure location.
+        :type location: str
+        :return: The resource name.
+        :rtype: str
+        """
+        return "dsf"
 
 
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et

@@ -19,14 +19,16 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from org.acmsl.licdata.iac.domain import Resource
+from .azure_resource import AzureResource
+from .container_registry import ContainerRegistry
 from .resource_group import ResourceGroup
+from .role_definition import RoleDefinition
+from .web_app import WebApp
 import pulumi
 import pulumi_azure_native
-from typing import override
 
 
-class DockerPullRoleAssignment(Resource):
+class DockerPullRoleAssignment(AzureResource):
     """
     Azure Role Assignment for Licdata's Functions.
 
@@ -44,10 +46,10 @@ class DockerPullRoleAssignment(Resource):
         stackName: str,
         projectName: str,
         location: str,
-        functionApp: org.acmsl.licdata.iac.infrastructure.azure.FunctionApp,
-        roleDefinition: org.acmsl.licdata.iac.infrastructure.azure.RoleDefinition,
-        containerRegistry: org.acmsl.licdata.iac.infrastructure.azure.ContainerRegistry,
-        resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup,
+        webApp: WebApp,
+        roleDefinition: RoleDefinition,
+        containerRegistry: ContainerRegistry,
+        resourceGroup: ResourceGroup,
     ):
         """
         Creates a new DockerPullRoleAssignment instance.
@@ -57,8 +59,8 @@ class DockerPullRoleAssignment(Resource):
         :type projectName: str
         :param location: The Azure location.
         :type location: str
-        :param functionApp: The Function App.
-        :type functionApp: org.acmsl.licdata.iac.infrastructure.azure.FunctionApp
+        :param webApp: The WebApp.
+        :type webApp: org.acmsl.licdata.iac.infrastructure.azure.WebApp
         :param roleDefinition: The role definition.
         :type roleDefinition: org.acmsl.licdata.iac.infrastructure.azure.RoleDefinition
         :param containerRegistry: The container registry.
@@ -71,22 +73,15 @@ class DockerPullRoleAssignment(Resource):
             projectName,
             location,
             {
-                "function_app": functionApp,
+                "web_app": webApp,
                 "role_definition": roleDefinition,
-                "containerRegistry": containerRegistry,
+                "container_registry": containerRegistry,
                 "resource_group": resourceGroup,
             },
         )
-        self._role_assignment = self.create_role_assignment(
-            "docker_pull_for_licenses_assignment",
-            functionApp,
-            roleDefinition,
-            containerRegistry,
-            resourceGroup,
-        )
 
     # @override
-    def _build_name(self, stackName: str, projectName: str, location: str) -> str:
+    def _resource_name(self, stackName: str, projectName: str, location: str) -> str:
         """
         Builds the resource name.
         :param stackName: The name of the stack.
@@ -98,7 +93,7 @@ class DockerPullRoleAssignment(Resource):
         :return: The resource name.
         :rtype: str
         """
-        return f"{stackName}-{projectName}-{location}-docker_pull_role_assignment"
+        return "radp"
 
     # @override
     def _create(self, name: str) -> pulumi_azure_native.authorization.RoleAssignment:
@@ -112,7 +107,7 @@ class DockerPullRoleAssignment(Resource):
         # the role definition id comes from `az role definition list --name AcrPull`
         return pulumi_azure_native.authorization.RoleAssignment(
             name,
-            principal_id=self.function_app.identity.principal_id,
+            principal_id=self.web_app.identity.principal_id,
             principal_type="ServicePrincipal",
             role_definition_id=self.role_definition.id,
             scope=self.container_registry.id,

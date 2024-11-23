@@ -19,14 +19,16 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from org.acmsl.licdata.iac.domain import Resource
+from .azure_resource import AzureResource
+from .dns_record import DnsRecord
+from .dns_zone import DnsZone
+from .front_door import FrontDoor
 from .resource_group import ResourceGroup
 import pulumi
 import pulumi_azure_native
-from typing import override
 
 
-class FrontendEndpoint(Resource):
+class FrontendEndpoint(AzureResource):
     """
     Azure FrontendEndpoint for Licdata.
 
@@ -45,10 +47,10 @@ class FrontendEndpoint(Resource):
         projectName: str,
         location: str,
         endpointName: str,
-        frontDoor: org.acmsl.licdata.iac.infrastructure.azure.FrontDoor,
-        dnsRecord: org.acmsl.licdata.iac.infrastructure.azure.DnsRecord,
-        dnsZone: org.acmsl.licdata.iac.infrastructure.azure.DnsZone,
-        resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup,
+        frontDoor: FrontDoor,
+        dnsRecord: DnsRecord,
+        dnsZone: DnsZone,
+        resourceGroup: ResourceGroup,
     ):
         """
         Creates a new Frontend Endpoint.
@@ -96,7 +98,7 @@ class FrontendEndpoint(Resource):
         return self._endpoint_name if self._endpoint_name is not None else "licdata"
 
     # @override
-    def _build_name(self, stackName: str, projectName: str, location: str) -> str:
+    def _resource_name(self, stackName: str, projectName: str, location: str) -> str:
         """
         Builds the resource name.
         :param stackName: The name of the stack.
@@ -108,7 +110,7 @@ class FrontendEndpoint(Resource):
         :return: The resource name.
         :rtype: str
         """
-        return f"{stackName}-{projectName}-{location}-frontend-endpoint"
+        return "fe"
 
     # @override
     def _create(self, name: str) -> pulumi_azure_native.cdn.AFDEndpoint:

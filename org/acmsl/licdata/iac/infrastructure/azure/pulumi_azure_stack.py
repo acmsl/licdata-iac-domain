@@ -23,7 +23,6 @@ from org.acmsl.licdata.iac.infrastructure import PulumiStack
 from .resource_group import ResourceGroup
 from .function_storage_account import FunctionStorageAccount
 from .app_service_plan import AppServicePlan
-from .web_app import WebApp
 from .public_ip_address import PublicIpAddress
 from .dns_zone import DnsZone
 from .dns_record import DnsRecord
@@ -34,6 +33,7 @@ from .app_insights import AppInsights
 from .container_registry import ContainerRegistry
 from .docker_pull_role_definition import DockerPullRoleDefinition
 from .docker_pull_role_assignment import DockerPullRoleAssignment
+from .web_app import WebApp
 
 
 class PulumiAzureStack(PulumiStack):
@@ -98,7 +98,7 @@ class PulumiAzureStack(PulumiStack):
         """
         Retrieves the Azure Function Storage Account.
         :return: Such Function Storage Account.
-        :rtype: FunctionStorageAccount
+        :rtype: org.acmsl.licdata.iac.infrastructure.azure.FunctionStorageAccount
         """
         return self._function_storage_account
 
@@ -107,25 +107,25 @@ class PulumiAzureStack(PulumiStack):
         """
         Retrieves the Azure App Service Plan.
         :return: Such App Service Plan.
-        :rtype: AppServicePlan
+        :rtype: org.acmsl.licdata.iac.infrastructure.azure.AppServicePlan
         """
         return self._app_service_plan
 
     @property
-    def function_app(self) -> FunctionApp:
+    def web_app(self) -> WebApp:
         """
-        Retrieves the Azure Function App.
-        :return: Such Function App.
-        :rtype: FunctionApp
+        Retrieves the Azure WebApp.
+        :return: Such WebApp.
+        :rtype: org.acmsl.licdata.iac.infrastructure.azure.WebApp
         """
-        return self._function_app
+        return self._web_app
 
     @property
     def public_ip_address(self) -> PublicIpAddress:
         """
         Retrieves the Azure Public IP Address.
         :return: Such Public IP Address.
-        :rtype: PublicIpAddress
+        :rtype: org.acmsl.licdata.iac.infrastructure.azure.PublicIpAddress
         """
         return self._public_ip_address
 
@@ -134,7 +134,7 @@ class PulumiAzureStack(PulumiStack):
         """
         Retrieves the Azure DNS Zone.
         :return: Such DNS Zone.
-        :rtype: DnsZone
+        :rtype: org.acmsl.licdata.iac.infrastructure.azure.DnsZone
         """
         return self._dns_zone
 
@@ -143,7 +143,7 @@ class PulumiAzureStack(PulumiStack):
         """
         Retrieves the Azure DNS Record.
         :return: Such DNS Record.
-        :rtype: DnsRecord
+        :rtype: org.acmsl.licdata.iac.infrastructure.azure.DnsRecord
         """
         return self._dns_record
 
@@ -152,7 +152,7 @@ class PulumiAzureStack(PulumiStack):
         """
         Retrieves the Azure Blob Container.
         :return: Such Blob Container.
-        :rtype: BlobContainer
+        :rtype: org.acmsl.licdata.iac.infrastructure.azure.BlobContainer
         """
         return self._blob_container
 
@@ -195,7 +195,7 @@ class PulumiAzureStack(PulumiStack):
     @property
     def docker_pull_role_definition(self) -> DockerPullRoleDefinition:
         """
-        Retrieves the Role Definition allowing the functinos to perform Docker pulls.
+        Retrieves the Role Definition allowing the functions to perform Docker pulls.
         :return: Such instance.
         :rtype: org.acmsl.licdata.iac.infrastructure.azure.DorkecPullRoleDefinition
         """
@@ -210,19 +210,33 @@ class PulumiAzureStack(PulumiStack):
         """
         return self._docker_pull_role_assignment
 
-    def declare_infrastructure(self):
+    async def declare_infrastructure(self):
         """
         Creates the infrastructure.
         """
         self._resource_group = ResourceGroup(
             self.stack_name, self.project_name, self.location
         )
+        self._resource_group.create()
+
         self._function_storage_account = FunctionStorageAccount(
             self.stack_name, self.project_name, self.location, self._resource_group
         )
+        self._function_storage_account.create()
+
         self._app_service_plan = AppServicePlan(
-            self.stack_name, self.project_name, self.location, self._resource_group
+            self.stack_name,
+            self.project_name,
+            self.location,
+            None,
+            None,
+            None,
+            None,
+            None,
+            self._resource_group,
         )
+        self._app_service_plan.create()
+
         # self._public_ip_address = PublicIpAddress(self.stack_name, self.project_name, self.location, self._resource_group)
         # self._dns_zone = DnsZone(self.stack_name, self.project_name, self.location, self._resource_group)
         # self._dns_record = DnsRecord(
@@ -240,44 +254,192 @@ class PulumiAzureStack(PulumiStack):
         #     self._blob_container, self._function_storage_account, self.stack_name, self.project_name, self.location, self._resource_group
         # )
         self._app_insights = AppInsights(
-            self.stack_name, self.project_name, self.location, self._resource_group
+            self.stack_name,
+            self.project_name,
+            self.location,
+            None,
+            None,
+            self._resource_group,
         )
+        self._app_insights.create()
 
         self._container_registry = ContainerRegistry(
-            self.stack_name, self.project_name, self.location, self._resource_group
+            self.stack_name,
+            self.project_name,
+            self.location,
+            None,
+            None,
+            self._resource_group,
         )
+        self._container_registry.create()
 
-        self._function_app = FunctionApp(
+        self._web_app = WebApp(
+            self.stack_name,
+            self.project_name,
+            self.location,
             self._app_insights,
             self._function_storage_account,
             self._app_service_plan,
             self._container_registry,
-            self.stack_name,
-            self.project_name,
-            self.location,
             self._resource_group,
         )
+        self._web_app.create()
+
         # self._webapp_deployment_slot = FunctionsDeploymentSlot(
         #     self._function_app, self._resource_group
         # )
         self._docker_pull_role_definition = DockerPullRoleDefinition(
-            self._container_registry,
             self.stack_name,
             self.project_name,
             self.location,
+            self._container_registry,
             self._resource_group,
         )
+        self._docker_pull_role_definition.create()
 
         self._docker_pull_role_assignment = DockerPullRoleAssignment(
-            self._function_app,
-            self._docker_pull_role_definition,
-            self._container_registry,
             self.stack_name,
             self.project_name,
             self.location,
+            self._web_app,
+            self._docker_pull_role_definition,
+            self._container_registry,
             self._resource_group,
         )
+        self._docker_pull_role_assignment.create()
 
+        await self.build_docker_image()
+
+        await self.push_docker_image(self._container_registry)
+
+
+    async def build_docker_image(self, resourceGroup: ResourceGroup, containerRegistry: ContainerRegistry):
+        """
+        Builds the Docker image.
+        """
+        # Retrieve the registry credentials
+        credentials = Output.all(resourceGroup.name, containerRegistry.name).apply(
+            lambda args: containerRegistry.list_registry_credentials(
+                resource_group_name=args[0],
+                registry_name=args[1]
+            )
+        )
+
+        # Extract the username and password
+        admin_username = credentials.apply(lambda c: c.username)
+        admin_password = credentials.apply(lambda c: c.passwords[0].value)
+
+        # Define the image name using the registry's login server
+        image_name = registry.login_server.apply(
+            lambda login_server: f"{login_server}/my-image:latest"
+        )
+
+        # Create a temporary directory
+        temp_dir = tempfile.TemporaryDirectory()
+
+        # Define the path for the Dockerfile
+        dockerfile_path = os.path.join(temp_dir.name, 'Dockerfile')
+
+        # Write the Dockerfile content
+        dockerfile_content = """
+FROM mcr.microsoft.com/azure-functions/python:4-python3.11
+
+ENV AzureWebJobsScriptRoot=/home/site/wwwroot \
+    AzureFunctionsJobHost__Logging__Console__IsEnabled=true \
+    GIT_PYTHON_GIT_EXECUTABLE=/usr/bin/git
+
+
+# Install system-level dependencies
+RUN apt-get update && apt-get install -y \
+    libssl-dev git libc-ares2 \
+    && apt-get clean
+
+# Set the working directory
+WORKDIR /home/site/wwwroot
+
+ADD .deps/ .
+
+COPY requirements.txt .
+
+RUN pip install --upgrade pip && pip install grpcio && pip install --no-cache-dir -r requirements.txt --user
+
+ENV FUNCTIONS_WORKER_RUNTIME python
+
+ENV PYTHONPATH="${PYTHONPATH}:/root/.local/lib/python3.11/site-packages"
+
+EXPOSE 80
+        """
+
+        # Write the Dockerfile to the temporary directory
+        with open(dockerfile_path, 'w') as dockerfile:
+            dockerfile.write(dockerfile_content)
+
+        # Define the path for the requirements.txt
+        requirements_txt_path = os.path.join(temp_dir.name, 'requirements.txt')
+
+        # Write the Dockerfile content
+        requirements_txt_content = """
+azure-functions==1.21.3
+bcrypt==4.1.2
+brotlicffi==1.1.0.0
+certifi==2024.2.2
+cffi==1.16.0
+charset-normalizer==3.3.2
+coverage==7.4.4
+cryptography==42.0.5
+dbus_next==0.2.3
+ddt==1.7.2
+Deprecated==1.2.14
+dnspython==2.6.1
+dulwich==0.21.7
+esdbclient==1.1.3
+gitdb==4.0.11
+GitPython==3.1.43
+grpcio==1.62.2
+idna==3.7
+installer==0.7.0
+packaging==24.0
+paramiko==3.4.0
+path==16.14.0
+poetry-core==1.9.0
+protobuf==4.24.4
+pyasn1==0.6.0
+pycparser==2.22
+PyGithub==2.3.0
+PyJWT==2.8.0
+PyNaCl==1.5.0
+requests==2.31.0
+semver==3.0.2
+six==1.16.0
+typing_extensions==4.11.0
+unidiff==0.7.5
+urllib3==2.2.1
+wheel==0.43.0
+wrapt==1.16.0
+        """
+
+        image_name = containerRegistry.login_server.apply(
+            lambda login_server: f"{login_server}/licdata:latest"
+
+        # Build and push the Docker image
+        image = Image(
+            'licdata:latest',
+            build=temporary_folder,
+            image_name=image_name,
+            registry=Registry(
+                server=containerRegistry.login_server,
+                username=admin_username,
+                password=admin_password
+            )
+        )
+
+    async def push_docker_image(self, container_registry: ContainerRegistry):
+        """
+        Pushes the Docker image to the container registry.
+        :param container_registry: The container registry.
+        :type container_registry: ContainerRegistry
+        """
+        pass
 
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et
 # Local Variables:

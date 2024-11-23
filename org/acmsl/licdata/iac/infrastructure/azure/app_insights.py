@@ -19,14 +19,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from org.acmsl.licdata.iac.domain import Resource
-from org.acmsl.licdata.iac.infrastructure.azure import ResourceGroup,
+from .azure_resource import AzureResource
+from .resource_group import ResourceGroup
 import pulumi
 import pulumi_azure_native
-from typing import override
 
 
-class AppInsights(Resource):
+class AppInsights(AzureResource):
     """
     Azure Application Insights for Licdata.
 
@@ -92,7 +91,7 @@ class AppInsights(Resource):
         )
 
     # @override
-    def _build_name(self, stackName: str, projectName: str, location: str) -> str:
+    def _resource_name(self, stackName: str, projectName: str, location: str) -> str:
         """
         Builds the resource name.
         :param stackName: The name of the stack.
@@ -104,7 +103,7 @@ class AppInsights(Resource):
         :return: The resource name.
         :rtype: str
         """
-        return f"{stackName}-{projectName}-{location}-app-insights"
+        return "appi"
 
     # @override
     def _create(self, name: str) -> pulumi_azure_native.insights.Component:

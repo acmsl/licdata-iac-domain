@@ -19,14 +19,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from org.acmsl.licdata.iac.domain import Resource
+from .azure_resource import AzureResource
 from .resource_group import ResourceGroup
 import pulumi
 import pulumi_azure_native
-from typing import override
 
 
-class FrontDoor(Resource):
+class FrontDoor(AzureResource):
     """
     Azure FrontDoor for Licdata.
 
@@ -46,7 +45,7 @@ class FrontDoor(Resource):
         location: str,
         profileName: str,
         frontDoorType: str,
-        resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup,
+        resourceGroup: ResourceGroup,
     ):
         """
         Creates a new FrontDoor instance.
@@ -90,6 +89,21 @@ class FrontDoor(Resource):
             if self._front_door_type is not None
             else "Standard_AzureFrontDoor"
         )
+
+    # @override
+    def _resource_name(self, stackName: str, projectName: str, location: str) -> str:
+        """
+        Builds the resource name.
+        :param stackName: The name of the stack.
+        :type stackName: str
+        :param projectName: The name of the project.
+        :type projectName: str
+        :param location: The Azure location.
+        :type location: str
+        :return: The resource name.
+        :rtype: str
+        """
+        return "fd"
 
     # @override
     def _create(self, name: str) -> pulumi_azure_native.cdn.Profile:

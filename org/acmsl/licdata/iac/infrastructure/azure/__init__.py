@@ -21,6 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 __path__ = __import__("pkgutil").extend_path(__path__, __name__)
 
+from .azure_resource import AzureResource
 from .resource_group import ResourceGroup
 from .cosmosdb_account import CosmosdbAccount
 from .cosmosdb_database import CosmosdbDatabase
@@ -44,6 +45,7 @@ from .front_door import FrontDoor
 from .frontend_endpoint import FrontendEndpoint
 from .web_app_deployment_slot import WebAppDeploymentSlot
 from .functions_deployment_slot import FunctionsDeploymentSlot
+from .web_app_host_name_binding import WebAppHostNameBinding
 from .app_insights import AppInsights
 from .container_registry import ContainerRegistry
 from .role_definition import RoleDefinition

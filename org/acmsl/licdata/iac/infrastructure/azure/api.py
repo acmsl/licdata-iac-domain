@@ -19,15 +19,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from org.acmsl.licdata.iac.domain import Resource
+from .azure_resource import AzureResource
 from .api_management_service import ApiManagementService
 from .resource_group import ResourceGroup
 import pulumi
 import pulumi_azure_native
-from typing import override
 
 
-class Api(Resource):
+class Api(AzureResource):
     """
     Azure Api for Licdata.
 
@@ -72,7 +71,7 @@ class Api(Resource):
         )
 
     # @override
-    def _build_name(self, stackName: str, projectName: str, location: str) -> str:
+    def _resource_name(self, stackName: str, projectName: str, location: str) -> str:
         """
         Builds the resource name.
         :param stackName: The name of the stack.
@@ -84,7 +83,7 @@ class Api(Resource):
         :return: The resource name.
         :rtype: str
         """
-        return f"{stackName}-{projectName}-{location}-api"
+        return "api"
 
     # @override
     def _create(self, name: str) -> pulumi_azure_native.apimanagement.Api:

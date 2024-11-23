@@ -19,15 +19,15 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from org.acmsl.licdata.iac.domain import Resource
+from .azure_resource import AzureResource
 from .resource_group import ResourceGroup
 from .storage_account import StorageAccount
 import pulumi
 import pulumi_azure_native
-from typing import override
+from typing import Any
 
 
-class BlobContainer(Resource):
+class BlobContainer(AzureResource):
     """
     A blob container in Azure.
 
@@ -82,7 +82,7 @@ class BlobContainer(Resource):
         return self._public_access if self._public_access is not None else "Blob"
 
     # @override
-    def _build_name(self, stackName: str, projectName: str, location: str) -> str:
+    def _resource_name(self, stackName: str, projectName: str, location: str) -> str:
         """
         Builds the resource name.
         :param stackName: The name of the stack.
@@ -94,7 +94,7 @@ class BlobContainer(Resource):
         :return: The resource name.
         :rtype: str
         """
-        return f"{stackName}-{projectName}-{location}-blob-container"
+        return "bc"
 
     # @override
     def _create(self, name: str) -> Any:

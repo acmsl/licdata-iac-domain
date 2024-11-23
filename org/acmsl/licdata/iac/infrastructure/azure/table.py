@@ -19,14 +19,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from org.acmsl.licdata.iac.domain import Resource
+from .azure_resource import AzureResource
 from .resource_group import ResourceGroup
+from .storage_account import StorageAccount
 import pulumi
 import pulumi_azure_native
-from typing import override
 
 
-class SessionsTable(Resource):
+class Table(AzureResource):
     """
     Azure Table for Licdata.
 
@@ -45,11 +45,11 @@ class SessionsTable(Resource):
         projectName: str,
         location: str,
         name: str,
-        storageAccount: pulumi_azure_native.storage.StorageAccount,
-        resourceGroup: pulumi_azure_native.resources.ResourceGroup,
+        storageAccount: StorageAccount,
+        resourceGroup: ResourceGroup,
     ):
         """
-        Creates a new SessionsTable instance.
+        Creates a new Table instance.
         :param stackName: The name of the stack.
         :type stackName: str
         :param projectName: The name of the project.
@@ -59,9 +59,9 @@ class SessionsTable(Resource):
         :param name: The table name.
         :type name: str
         :param storageAccount: The StorageAccount.
-        :type storageAccount: pulumi_azure_native.storage.StorageAccount
+        :type storageAccount: org.acmsl.licdata.iac.infrastructure.azure.StorageAccount
         :param resourceGroup: The ResourceGroup.
-        :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
+        :type resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup
         """
         super().__init__(
             stackName,
@@ -81,7 +81,7 @@ class SessionsTable(Resource):
         return self._name
 
     # @override
-    def _build_name(self, stackName: str, projectName: str, location: str) -> str:
+    def _resource_name(self, stackName: str, projectName: str, location: str) -> str:
         """
         Builds the resource name.
         :param stackName: The name of the stack.
@@ -93,7 +93,7 @@ class SessionsTable(Resource):
         :return: The resource name.
         :rtype: str
         """
-        return f"{stackName}-{projectName}-{location}-table-{self.name}"
+        return f"t{self.name}"
 
     # @override
     def _create(self, name: str) -> pulumi_azure_native.storage.Table:

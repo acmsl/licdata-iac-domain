@@ -1,8 +1,8 @@
 # vim: set fileencoding=utf-8
 """
-org/acmsl/licdata/iac/infrastructure/azure/security_group.py
+org/acmsl/licdata/iac/infrastructure/azure/network_security_group.py
 
-This script defines the SecurityGroup class.
+This script defines the NetworkSecurityGroup class.
 
 Copyright (C) 2024-today acmsl's licdata
 
@@ -19,18 +19,17 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from org.acmsl.licdata.iac.domain import Resource
+from .azure_resource import AzureResource
 from .resource_group import ResourceGroup
 import pulumi
 import pulumi_azure_native
-from typing import override
 
 
-class SecurityGroup(Resource):
+class NetworkSecurityGroup(AzureResource):
     """
     Azure Security Group for Licdata.
 
-    Class name: SecurityGroup
+    Class name: NetworkSecurityGroup
 
     Responsibilities:
         - Define the Azure Security Group for Licdata.
@@ -52,7 +51,7 @@ class SecurityGroup(Resource):
         destinationPortRange: str,
         sourceAddressPrefix: str,
         destinationAddressPrefix: str,
-        resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup,
+        resourceGroup: ResourceGroup,
     ):
         """
         Creates a new SecurityGroup instance.
@@ -178,7 +177,7 @@ class SecurityGroup(Resource):
         )
 
     # @override
-    def _build_name(self, stackName: str, projectName: str, location: str) -> str:
+    def _resource_name(self, stackName: str, projectName: str, location: str) -> str:
         """
         Builds the resource name.
         :param stackName: The name of the stack.
@@ -190,7 +189,7 @@ class SecurityGroup(Resource):
         :return: The resource name.
         :rtype: str
         """
-        return f"{stackName}-{projectName}-{location}-network-security-group"
+        return "nsg"
 
     def create_security_rule_args(
         self, name: str

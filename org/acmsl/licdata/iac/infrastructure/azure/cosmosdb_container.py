@@ -19,16 +19,16 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from org.acmsl.licdata.iac.domain import Resource
+from .azure_resource import AzureResource
 from .cosmosdb_account import CosmosdbAccount
 from .cosmosdb_database import CosmosdbDatabase
 from .resource_group import ResourceGroup
 import pulumi
 import pulumi_azure_native
-from typing import Dict, override
+from typing import Dict
 
 
-class CosmosdbContainer(BaseObject):
+class CosmosdbContainer(AzureResource):
     """
     Azure CosmosDB Container for Licdata.
 
@@ -97,7 +97,7 @@ class CosmosdbContainer(BaseObject):
         )
 
     # @override
-    def _build_name(self, stackName: str, projectName: str, location: str) -> str:
+    def _resource_name(self, stackName: str, projectName: str, location: str) -> str:
         """
         Builds the resource name.
         :param stackName: The name of the stack.
@@ -109,7 +109,7 @@ class CosmosdbContainer(BaseObject):
         :return: The resource name.
         :rtype: str
         """
-        return f"{stackName}-{projectName}-{location}-cosmosdb-container"
+        return "cdbc"
 
     # @override
     def _create(

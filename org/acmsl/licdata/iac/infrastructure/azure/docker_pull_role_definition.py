@@ -19,11 +19,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from .container_registry import ContainerRegistry
 from .resource_group import ResourceGroup
 from .role_definition import RoleDefinition
 import pulumi
 import pulumi_azure_native
-from typing import override
 
 
 class DockerPullRoleDefinition(RoleDefinition):
@@ -44,8 +44,8 @@ class DockerPullRoleDefinition(RoleDefinition):
         stackName: str,
         projectName: str,
         location: str,
-        containerRegistry: org.acmsl.licdata.iac.infrastructure.azure.ContainerRegistry,
-        resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup,
+        containerRegistry: ContainerRegistry,
+        resourceGroup: ResourceGroup,
     ):
         """
         Creates a new DockerPullRoleDefinition instance.
@@ -66,8 +66,8 @@ class DockerPullRoleDefinition(RoleDefinition):
             location,
             "ACR Pull Custom Role",
             "Custom role to allow managed identity to pull images from ACR",
-            self.resource_group.id,
-            [self.resource_group.id],
+            resourceGroup.id,
+            [resourceGroup.id],
             [
                 {
                     "actions": ["Microsoft.ContainerRegistry/registries/pull/read"],
@@ -78,7 +78,7 @@ class DockerPullRoleDefinition(RoleDefinition):
         )
 
     # @override
-    def _build_name(self, stackName: str, projectName: str, location: str) -> str:
+    def _resource_name(self, stackName: str, projectName: str, location: str) -> str:
         """
         Builds the resource name.
         :param stackName: The name of the stack.
@@ -90,7 +90,7 @@ class DockerPullRoleDefinition(RoleDefinition):
         :return: The resource name.
         :rtype: str
         """
-        return f"{stackName}-{projectName}-{location}-docker_pull_role_definition"
+        return "rddp"
 
     # @override
     def _post_create(self, resource: pulumi_azure_native.authorization.RoleDefinition):

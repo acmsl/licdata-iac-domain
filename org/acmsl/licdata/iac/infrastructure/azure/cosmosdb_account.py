@@ -19,15 +19,15 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from org.acmsl.licdata.iac.domain import Resource
+from .azure_resource import AzureResource
 from .resource_group import ResourceGroup
 import pulumi
 import pulumi_azure_native
 from pulumi_azure_native import apimanagement, resources, storage, web, sql, network
-from typing import override
+from typing import Any, Dict
 
 
-class CosmosdbAccount(Resource):
+class CosmosdbAccount(AzureResource):
     """
     Azure CosmosDB Account for Licdata.
 
@@ -119,6 +119,21 @@ class CosmosdbAccount(Resource):
         :rtype: bool
         """
         return self._enable_free_tier if self._enable_free_tier is not None else True
+
+    # @override
+    def _resource_name(self, stackName: str, projectName: str, location: str) -> str:
+        """
+        Builds the resource name.
+        :param stackName: The name of the stack.
+        :type stackName: str
+        :param projectName: The name of the project.
+        :type projectName: str
+        :param location: The Azure location.
+        :type location: str
+        :return: The resource name.
+        :rtype: str
+        """
+        return "cdba"
 
     # @override
     def _create(self, name: str) -> Any:

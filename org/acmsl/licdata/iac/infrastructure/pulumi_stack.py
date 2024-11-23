@@ -93,6 +93,12 @@ class PulumiStack(Stack, abc.ABC):
         """
         pass
 
+    async def down(self):
+        """
+        Brings down the stack.
+        """
+        raise NotImplementedError()
+
 
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et
 # Local Variables:

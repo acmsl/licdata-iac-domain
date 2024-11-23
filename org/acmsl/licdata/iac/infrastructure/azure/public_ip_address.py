@@ -19,14 +19,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from org.acmsl.licdata.iac.domain import Resource
+from .azure_resource import AzureResource
 from .resource_group import ResourceGroup
 import pulumi
 import pulumi_azure_native
-from typing import override
 
 
-class PublicIpAddress(Resource):
+class PublicIpAddress(AzureResource):
     """
     Azure PublicIpAddress for Licdata.
 
@@ -46,7 +45,7 @@ class PublicIpAddress(Resource):
         location: str,
         publicIpAllocationMethod: str,
         ipAddressType: str,
-        resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup,
+        resourceGroup: ResourceGroup,
     ):
         """
         Creates a new PublicIpAddress instance.
@@ -94,7 +93,7 @@ class PublicIpAddress(Resource):
         )
 
     # @override
-    def _build_name(self, stackName: str, projectName: str, location: str) -> str:
+    def _resource_name(self, stackName: str, projectName: str, location: str) -> str:
         """
         Builds the resource name.
         :param stackName: The name of the stack.
@@ -106,7 +105,7 @@ class PublicIpAddress(Resource):
         :return: The resource name.
         :rtype: str
         """
-        return f"{stackName}-{projectName}-{location}-public-ip-address"
+        return "pipa"
 
     # @override
     def _create(self, name: str) -> pulumi_azure_native.network.PublicIPAddress:

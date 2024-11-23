@@ -20,14 +20,13 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import abc
-from org.acmsl.licdata.iac.domain import Resource
+from .azure_resource import AzureResource
 from .resource_group import ResourceGroup
 import pulumi
 import pulumi_azure_native
-from typing import override
 
 
-class StorageAccount(Resource, abc.ABC):
+class StorageAccount(AzureResource, abc.ABC):
     """
     Azure Storage Account customized for Licdata.
 
@@ -49,7 +48,7 @@ class StorageAccount(Resource, abc.ABC):
         kind: str,
         skuType: str,
         allowBlobPublicAccess: bool,
-        resourceGroup: pulumi_azure_native.resources.ResourceGroup,
+        resourceGroup: ResourceGroup,
     ):
         """
         Creates a new StorageAccount instance.
@@ -68,7 +67,7 @@ class StorageAccount(Resource, abc.ABC):
         :param allowBlobPublicAccess: Whether to allow public access to the blobs.
         :type allowBlobPublicAccess: bool
         :param resourceGroup: The ResourceGroup.
-        :type resourceGroup: pulumi_azure_native.resources.ResourceGroup
+        :type resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup
         """
         super().__init__(
             stackName, projectName, location, {"resource_group": resourceGroup}
@@ -93,7 +92,7 @@ class StorageAccount(Resource, abc.ABC):
         :return: Such information.
         :rtype: str
         """
-        return self._sku_type if self_.sku_type is not None else "Standard_LRS"
+        return self._sku_type if self._sku_type is not None else "Standard_LRS"
 
     @property
     def allow_blob_public_access(self) -> bool:

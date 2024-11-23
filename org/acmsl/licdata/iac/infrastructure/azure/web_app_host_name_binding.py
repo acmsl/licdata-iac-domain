@@ -1,8 +1,8 @@
 # vim: set fileencoding=utf-8
 """
-org/acmsl/licdata/iac/infrastructure/azure/host_name_binding.py
+org/acmsl/licdata/iac/infrastructure/azure/web_app_host_name_binding.py
 
-This script defines the HostNameBinding class.
+This script defines the WebAppHostNameBinding class.
 
 Copyright (C) 2024-today acmsl's licdata
 
@@ -19,21 +19,23 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from org.acmsl.licdata.iac.domain import Resource
+from .azure_resource import AzureResource
+from .resource_group import ResourceGroup
+from .dns_record import DnsRecord
+from .web_app import WebApp
 from .resource_group import ResourceGroup
 import pulumi
 import pulumi_azure_native
-from typing import override
 
 
-class HostNameBinding(Resource):
+class WebAppHostNameBinding(AzureResource):
     """
-    A host name binding in Azure.
+    A web-app host name binding in Azure.
 
-    Class name: HostNameBinding
+    Class name: WebAppHostNameBinding
 
     Responsibilities:
-        - Declares an Azure host name binding.
+        - Declares an Azure WebApp host name binding.
 
     Collaborators:
         - None
@@ -46,12 +48,12 @@ class HostNameBinding(Resource):
         location: str,
         hostNameType: str,
         customHostName: str,
-        dnsRecord: org.acmsl.licdata.iac.infrastructure.azure.DnsRecord,
-        webApp: org.acmsl.licdata.iac.infrastructure.azure.WebApp,
-        resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup,
+        dnsRecord: DnsRecord,
+        webApp: WebApp,
+        resourceGroup: ResourceGroup,
     ):
         """
-        Creates a new HostNameBinding instance.
+        Creates a new WebAppHostNameBinding instance.
         :param stackName: The name of the stack.
         :type stackName: str
         :param projectName: The name of the project.
@@ -69,7 +71,16 @@ class HostNameBinding(Resource):
         :param resourceGroup: The ResourceGroup.
         :type resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup
         """
-        super().__init__(stackName, projectName, location, {"dns_record": dnsRecord, "web_app": webApp, "resource_group": resourceGroup})
+        super().__init__(
+            stackName,
+            projectName,
+            location,
+            {
+                "dns_record": dnsRecord,
+                "web_app": webApp,
+                "resource_group": resourceGroup,
+            },
+        )
         self._host_name_type = hostNameType
         self._custom_host_name = customHostName
 
@@ -83,7 +94,7 @@ class HostNameBinding(Resource):
         return self._host_name_type if self._host_name_type is not None else "Verified"
 
     @property
-    self custom_host_name(self) -> str:
+    def custom_host_name(self) -> str:
         """
         Retrieves the custom host name.
         :return: Such name.
@@ -92,7 +103,7 @@ class HostNameBinding(Resource):
         return self._custom_host_name
 
     # @override
-    def _build_name(self, stackName: str, projectName: str, location: str) -> str:
+    def _resource_name(self, stackName: str, projectName: str, location: str) -> str:
         """
         Builds the resource name.
         :param stackName: The name of the stack.
@@ -104,16 +115,18 @@ class HostNameBinding(Resource):
         :return: The resource name.
         :rtype: str
         """
-        return f"{stackName}-{projectName}-{location}-host-name-binding"
+        return "wahnb"
 
     # @override
-    def _create(self, name: str) -> pulumi_azure_native.web.HostNameBinding:
+    def _create(self, name: str) -> pulumi_azure_native.web.WebAppHostNameBinding:
         """
         Creates a new HostNameBinding instance.
+        :param name: The name.
+        :type name: str
         :return: The binding.
-        :rtype: pulumi_azure_native.web.HostNameBinding
+        :rtype: pulumi_azure_native.web.WebAppHostNameBinding
         """
-        return pulumi_azure_native.web.HostNameBinding(
+        return pulumi_azure_native.web.WebAppHostNameBinding(
             name,
             name=self.dns_record.name,
             site_name=self.web_app.name,
@@ -125,15 +138,13 @@ class HostNameBinding(Resource):
         )
 
     # @override
-    def _post_create(self, resource: pulumi_azure_native.web.HostNameBinding):
+    def _post_create(self, resource: pulumi_azure_native.web.WebAppHostNameBinding):
         """
         Post-create hook.
         :param resource: The resource.
-        :type resource: pulumi_azure_native.web.HostNameBinding
+        :type resource: pulumi_azure_native.web.WebAppHostNameBinding
         """
-        resource.name.apply(
-            lambda name: pulumi.export("host_name_binding", name)
-        )
+        resource.name.apply(lambda name: pulumi.export("host_name_binding", name))
 
 
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et

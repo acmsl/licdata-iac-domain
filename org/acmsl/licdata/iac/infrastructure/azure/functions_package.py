@@ -20,6 +20,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from .blob import Blob
+from .blob_container import BlobContainer
+from .storage_account import StorageAccount
+from .resource_group import ResourceGroup
 import pulumi
 import pulumi_azure_native
 
@@ -39,9 +42,9 @@ class FunctionsPackage(Blob):
 
     def __init__(
         self,
-        blobContainer: org.acmsl.licdata.iac.infrastructure.azure.BlobContainer,
-        storageAccount: org.acmsl.licdata.iac.infrastructure.azure.StorageAccount,
-        resourceGroup: org.acmsl.licdata.iac.infrastructure.azure.ResourceGroup,
+        blobContainer: BlobContainer,
+        storageAccount: StorageAccount,
+        resourceGroup: ResourceGroup,
     ):
         """
         Creates a new FunctionsPackage instance.
@@ -59,6 +62,21 @@ class FunctionsPackage(Blob):
             storageAccount,
             resourceGroup,
         )
+
+    # @override
+    def _resource_name(self, stackName: str, projectName: str, location: str) -> str:
+        """
+        Builds the resource name.
+        :param stackName: The name of the stack.
+        :type stackName: str
+        :param projectName: The name of the project.
+        :type projectName: str
+        :param location: The Azure location.
+        :type location: str
+        :return: The resource name.
+        :rtype: str
+        """
+        return "bfp"
 
 
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et
