@@ -22,7 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import asyncio
 from pythoneda.shared.application import enable, PythonEDA
 from org.acmsl.iac.licdata.domain import LicdataIac
-from org.acmsl.iac.licdata.domain import InfrastructureUpdateRequested
+from pythoneda.iac.events import InfrastructureUpdateRequested
 from org.acmsl.iac.licdata.infrastructure.cli import PulumiOptionsCli
 from org.acmsl.iac.licdata.infrastructure.azure import PulumiAzureStackFactory
 import pulumi
