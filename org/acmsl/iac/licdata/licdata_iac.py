@@ -1,10 +1,10 @@
 # vim: set fileencoding=utf-8
 """
-org/acmsl/iac/licdata/domain/licdata_iac.py
+org/acmsl/iac/licdata/licdata_iac.py
 
 This script defines the LicdataIac class.
 
-Copyright (C) 2024-today acm-sl's Licdata IaC
+Copyright (C) 2024-today acm-sl's Licdata IaC Domain
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,9 +19,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from .infrastructure_update_requested import InfrastructureUpdateRequested
-from .infrastructure_updated import InfrastructureUpdated
-from .stack_factory import StackFactory
+from pythoneda.shared.iac.events import (
+    InfrastructureUpdateRequested,
+    InfrastructureUpdated,
+)
+from pythoneda.shared.iac import StackFactory
 from pythoneda.shared import EventListener, listen, Ports
 
 
