@@ -1,6 +1,6 @@
 # vim: set fileencoding=utf-8
 """
-org/acmsl/iac/licdata/licdata_iac.py
+org/acmsl/iac/licdata/domain/licdata_iac.py
 
 This script defines the LicdataIac class.
 
