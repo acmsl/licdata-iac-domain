@@ -25,7 +25,8 @@ from pythoneda.shared.iac.events import (
     InfrastructureUpdated,
 )
 from pythoneda.shared.iac import StackFactory
-from pythoneda.shared import EventEmitter, EventListener, Flow, listen, Ports
+from pythoneda.shared import Event, EventEmitter, EventListener, Flow, listen, Ports
+from typing import List
 
 
 class LicdataIac(Flow, EventEmitter, EventListener):
@@ -65,11 +66,13 @@ class LicdataIac(Flow, EventEmitter, EventListener):
     @listen(InfrastructureUpdateRequested)
     async def listen_InfrastructureUpdateRequested(
         cls, event: InfrastructureUpdateRequested
-    ) -> InfrastructureUpdated:
+    ) -> List[Event]:
         """
         Gets notified of a InfrastructureUpdateRequested event.
         :param event: The event.
         :type event: org.acmsl.iac.licdata.domain.InfrastructureUpdateRequested
+        :return: A list of events.
+        :rtype: List[org.acmsl.iac.licdata.domain.Event]
         """
         cls.instance()._add_event(event)
         cls.logger().info(
@@ -82,8 +85,11 @@ class LicdataIac(Flow, EventEmitter, EventListener):
         followUp = InfrastructureUpdated(
             event.stack_name, event.project_name, event.location
         )
+        result = [followUp]
         if not followUp.is_error:
-            await cls.instance().emit(DockerImageRequested("licdata"))
+            result.append(DockerImageRequested("licdata"))
+
+        return result
 
     async def update_infrastructure(
         self, stackName: str, projectName: str, location: str
