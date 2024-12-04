@@ -29,7 +29,7 @@ from pythoneda.shared import Event, EventEmitter, EventListener, Flow, listen, P
 from typing import List
 
 
-class LicdataIac(Flow, EventEmitter, EventListener):
+class LicdataIac(Flow, EventListener):
     """
     Licdata Infrastructure as Code.
 
@@ -135,15 +135,13 @@ class LicdataIac(Flow, EventEmitter, EventListener):
         self.__class__.logger().info(
             f"Docker image available: {event.name}/{event.version} ({event.url})"
         )
-        emit(
-            await cls.update_docker_resources(
-                previousEvent.stack_name,
-                previousEvent.project_name,
-                previousEvent.location,
-                event.name,
-                event.version,
-                event.url,
-            )
+        return await cls.update_docker_resources(
+            previousEvent.stack_name,
+            previousEvent.project_name,
+            previousEvent.location,
+            event.name,
+            event.version,
+            event.url,
         )
 
     async def update_docker_resources(
