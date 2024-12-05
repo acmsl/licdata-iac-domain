@@ -107,7 +107,6 @@ class LicdataIac(Flow, EventListener):
         """
         factory = Ports.instance().resolve_first(StackFactory)
         stack = factory.new(stackName, projectName, location)
-        self._stack = stack
         return await stack.up()
 
     @classmethod
@@ -178,7 +177,7 @@ class LicdataIac(Flow, EventListener):
         """
         factory = Ports.instance().resolve_first(StackFactory)
         stack = factory.new(stackName, projectName, location)
-        return await stack.up_docker_resources()
+        return await stack.up_docker_resources(imageName, imageVersion, imageUrl)
 
 
 # Local Variables:
