@@ -21,6 +21,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from pythoneda.shared.artifact.events import DockerImageAvailable, DockerImageRequested
 from pythoneda.shared.iac.events import (
+    InfrastructureRemovalRequested,
+    InfrastructureRemoved,
     InfrastructureUpdateRequested,
     InfrastructureUpdated,
 )
@@ -178,6 +180,48 @@ class LicdataIac(Flow, EventListener):
         factory = Ports.instance().resolve_first(StackFactory)
         stack = factory.new(stackName, projectName, location)
         return await stack.up_docker_resources(imageName, imageVersion, imageUrl)
+
+    @classmethod
+    @listen(InfrastructureRemovalRequested)
+    async def listen_InfrastructureRemovalRequested(
+        cls, event: InfrastructureRemovalRequested
+    ) -> List[Event]:
+        """
+        Gets notified of a InfrastructureRemovalRequested event.
+        :param event: The event.
+        :type event: org.acmsl.iac.licdata.domain.InfrastructureRemovalRequested
+        :return: A list of events.
+        :rtype: List[org.acmsl.iac.licdata.domain.Event]
+        """
+        cls.instance().add_event(event)
+        cls.logger().info(
+            f"Infrastructure removal for {event.project_name}/{event.stack_name} at {event.location} requested"
+        )
+        followUp = await cls.instance().remove_infrastructure(
+            event.stack_name, event.project_name, event.location
+        )
+        for event in followUp:
+            cls.instance().add_event(event)
+        result = followUp
+        return result
+
+    async def remove_infrastructure(
+        self, stackName: str, projectName: str, location: str
+    ) -> List[Event]:
+        """
+        Removes the infrastructure.
+        :param stackName: The name of the stack.
+        :type stackName: str
+        :param projectName: The name of the project.
+        :type projectName: str
+        :param location: The location.
+        :type location: str
+        :return: A list of events.
+        :rtype: pythoneda.shared.Event
+        """
+        factory = Ports.instance().resolve_first(StackFactory)
+        stack = factory.new(stackName, projectName, location)
+        return await stack.destroy()
 
 
 # Local Variables:
