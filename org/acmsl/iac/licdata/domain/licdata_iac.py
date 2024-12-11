@@ -80,18 +80,9 @@ class LicdataIac(Flow, EventListener):
         cls.logger().info(
             f"Infrastructure update for {event.project_name}/{event.stack_name} at {event.location} requested"
         )
-        followUp = await cls.instance().update_infrastructure(
+        return await cls.instance().update_infrastructure(
             event.stack_name, event.project_name, event.location
         )
-        for event in followUp:
-            cls.instance().add_event(event)
-        result = followUp
-        if len(followUp) > 0 and not followUp[-1].is_error:
-            request = DockerImageRequested("licdata")
-            cls.instance().add_event(request)
-            result.append(request)
-
-        return result
 
     async def update_infrastructure(
         self, stackName: str, projectName: str, location: str
@@ -109,7 +100,15 @@ class LicdataIac(Flow, EventListener):
         """
         factory = Ports.instance().resolve_first(StackFactory)
         stack = factory.new(stackName, projectName, location)
-        return await stack.up()
+        followUp = await stack.up()
+        for event in followUp:
+            self.add_event(event)
+        result = followUp
+        if len(followUp) > 0 and not followUp[-1].is_error:
+            request = stack.request_docker_image()
+            self.add_event(request)
+            result.append(request)
+        return result
 
     @classmethod
     @listen(DockerImageAvailable)
