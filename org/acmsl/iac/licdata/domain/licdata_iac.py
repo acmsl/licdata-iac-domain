@@ -19,6 +19,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from pythoneda.shared import Event, EventEmitter, EventListener, Flow, listen, Ports
 from pythoneda.shared.artifact.events import DockerImageAvailable, DockerImageRequested
 from pythoneda.shared.iac.events import (
     InfrastructureRemovalRequested,
@@ -27,7 +28,7 @@ from pythoneda.shared.iac.events import (
     InfrastructureUpdated,
 )
 from pythoneda.shared.iac import StackFactory
-from pythoneda.shared import Event, EventEmitter, EventListener, Flow, listen, Ports
+from pythoneda.shared.runtime.secrets.events import CredentialIssued
 from typing import List
 
 
@@ -77,9 +78,7 @@ class LicdataIac(Flow, EventListener):
         :rtype: List[org.acmsl.iac.licdata.domain.Event]
         """
         cls.instance().add_event(event)
-        cls.logger().info(
-            f"Infrastructure update for {event.project_name}/{event.stack_name} at {event.location} requested"
-        )
+        cls.logger().info(f"Received {event}")
         return await cls.instance().update_infrastructure(
             event.stack_name, event.project_name, event.location
         )
@@ -105,21 +104,37 @@ class LicdataIac(Flow, EventListener):
             self.add_event(event)
         result = followUp
         if len(followUp) > 0 and not followUp[-1].is_error:
+            credentials = await stack.retrieve_container_registry_credentials()
+            credential_issued = CredentialIssued(
+                credentials.get("username", None),
+                credentials.get("password", None),
+                {
+                    "stack_name": stackName,
+                    "project_name": projectName,
+                    "location": location,
+                    "docker_registry_url": credentials.get("docker_registry_url", None),
+                },
+            )
+            self.add_event(credential_issued)
+            result.append(credential_issued)
             request = stack.request_docker_image()
             self.add_event(request)
             result.append(request)
+
         return result
 
     @classmethod
     @listen(DockerImageAvailable)
-    async def listen_DockerImageAvailable(
-        cls, event: DockerImageAvailable
-    ) -> InfrastructureUpdated:
+    async def listen_DockerImageAvailable(cls, event: DockerImageAvailable):
         """
-        Gets notified of a InfrastructureUpdateRequested event.
+        Gets notified of a DockerImageAvailable event.
         :param event: The event.
-        :type event: org.acmsl.iac.licdata.domain.InfrastructureUpdateRequested
+        :type event: pythoneda.shared.artifact.events.DockerImageAvailable
         """
+        cls.logger().debug(f"Received DockerImageAvailable: {event}")
+        cls.logger().debug(f"My events:")
+        for e in cls.instance().events:
+            cls.logger().debug({e})
         await cls.instance().resume(event)
 
     async def continue_flow(
@@ -128,9 +143,9 @@ class LicdataIac(Flow, EventListener):
         """
         Continues the flow with a new event.
         :param event: The event.
-        :type event: org.acmsl.iac.licdata.domain.DockerImageAvailable
+        :type event: pythoneda.shared.artifact.events.DockerImageAvailable
         :param previousEvent: The previous event.
-        :type previousEvent: org.acmsl.iac.licdata.domain.DockerImageRequested
+        :type event: pythoneda.shared.artifact.events.DockerImageRequested
         """
         self.__class__.logger().info(
             f"Docker image available: {event.image_name}/{event.image_version} ({event.image_url})"
