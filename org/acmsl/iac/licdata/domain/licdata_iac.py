@@ -20,7 +20,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from pythoneda.shared import Event, EventEmitter, EventListener, Flow, listen, Ports
-from pythoneda.shared.artifact.events import DockerImageAvailable, DockerImageRequested
+from pythoneda.shared.artifact.events import DockerImagePushed, DockerImageRequested
 from pythoneda.shared.iac.events import (
     InfrastructureRemovalRequested,
     InfrastructureRemoved,
@@ -117,38 +117,41 @@ class LicdataIac(Flow, EventListener):
             )
             self.add_event(credential_issued)
             result.append(credential_issued)
-            request = stack.request_docker_image()
+            request = stack.request_docker_image(
+                credential_issued.name,
+                credentials.get("docker_registry_url", None),
+            )
             self.add_event(request)
             result.append(request)
 
         return result
 
     @classmethod
-    @listen(DockerImageAvailable)
-    async def listen_DockerImageAvailable(cls, event: DockerImageAvailable):
+    @listen(DockerImagePushed)
+    async def listen_DockerImagePushed(cls, event: DockerImagePushed):
         """
-        Gets notified of a DockerImageAvailable event.
+        Gets notified of a DockerImagePushed event.
         :param event: The event.
-        :type event: pythoneda.shared.artifact.events.DockerImageAvailable
+        :type event: pythoneda.shared.artifact.events.DockerImagePushed
         """
-        cls.logger().debug(f"Received DockerImageAvailable: {event}")
+        cls.logger().debug(f"Received DockerImagePushed: {event}")
         cls.logger().debug(f"My events:")
         for e in cls.instance().events:
             cls.logger().debug({e})
         await cls.instance().resume(event)
 
     async def continue_flow(
-        self, event: DockerImageAvailable, previousEvent: DockerImageRequested
+        self, event: DockerImagePushed, previousEvent: DockerImageRequested
     ):
         """
         Continues the flow with a new event.
         :param event: The event.
-        :type event: pythoneda.shared.artifact.events.DockerImageAvailable
+        :type event: pythoneda.shared.artifact.events.DockerImagePushed
         :param previousEvent: The previous event.
-        :type event: pythoneda.shared.artifact.events.DockerImageRequested
+        :type previousEvent: pythoneda.shared.artifact.events.DockerImageRequested
         """
         self.__class__.logger().info(
-            f"Docker image available: {event.image_name}/{event.image_version} ({event.image_url})"
+            f"Docker image pushed: {event.image_name}/{event.image_version} ({event.image_url})"
         )
         infrastructure_updated = self.find_latest_event(InfrastructureUpdated)
         if infrastructure_updated is None:
