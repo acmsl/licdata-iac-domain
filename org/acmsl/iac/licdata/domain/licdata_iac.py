@@ -20,7 +20,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from pythoneda.shared import Event, EventEmitter, EventListener, Flow, listen, Ports
-from pythoneda.shared.artifact.events import DockerImagePushed, DockerImageRequested
+from pythoneda.shared.artifact.events import DockerImagePushed
 from pythoneda.shared.iac.events import (
     DockerImageDetailsRequested,
     DockerResourcesRemovalRequested,
@@ -83,7 +83,6 @@ class LicdataIac(Flow, EventListener):
         :rtype: List[org.acmsl.iac.licdata.domain.Event]
         """
         cls.instance().add_event(event)
-        cls.logger().info(f"Received {event}")
         return await cls.instance().update_infrastructure(event)
 
     async def update_infrastructure(
@@ -99,13 +98,12 @@ class LicdataIac(Flow, EventListener):
         factory = Ports.instance().resolve_first(StackOperationFactory)
         stack_operation = factory.new(event)
         followUp = await stack_operation.perform()
-        for event in followUp:
-            self.add_event(event)
         result = followUp
         if len(followUp) > 0 and not followUp[-1].is_error:
             credentials = (
                 await stack_operation.retrieve_container_registry_credentials()
             )
+            prev_event = followUp[-1]
             credential_issued = CredentialIssued(
                 credentials.get("credential_name", None),
                 credentials.get("credential_password", None),
@@ -115,25 +113,26 @@ class LicdataIac(Flow, EventListener):
                     "location": event.location,
                     "docker_registry_url": credentials.get("docker_registry_url", None),
                 },
+                [prev_event.id] + prev_event.previous_event_ids,
             )
-            self.add_event(credential_issued)
             result.append(credential_issued)
+
+        for evt in result:
+            self.add_event(evt)
 
         return result
 
     @classmethod
-    @listen(InfrastructureUpdated)
-    async def listen_InfrastructureUpdated(
-        cls, event: InfrastructureUpdated
-    ) -> List[Event]:
+    @listen(CredentialIssued)
+    async def listen_CredentialIssued(cls, event: CredentialIssued) -> List[Event]:
         """
-        Gets notified of a InfrastructureUpdated event.
+        Gets notified of a CredentialIssued event.
         :param event: The event.
-        :type event: pythoneda.shared.iac.events.InfrastructureUpdated
+        :type event: pythoneda.shared.runtime.secrets.events.CredentialIssued
         :return: The resulting events.
-        :rtype: List[Event]
+        :rtype: List[pythoneda.shared.Event]
         """
-        LicdataIac.logger().debug(f"Received InfrastructureUpdated: {event}")
+        cls.instance().add_event(event)
         return await cls.instance().resume(event)
 
     @classmethod
@@ -146,92 +145,103 @@ class LicdataIac(Flow, EventListener):
         :return: The resulting events.
         :rtype: List[Event]
         """
-        LicdataIac.logger().debug(f"Received DockerImagePushed: {event}")
+        cls.instance().add_event(event)
         return await cls.instance().resume(event)
 
-    async def continue_flow(self, event: Event, previousEvent: Event) -> List[Event]:
+    async def continue_flow(self, event: Event) -> List[Event]:
         """
         Continues the flow with a new event.
         :param event: The event.
         :type event: pythoneda.shared.Event
-        :param previousEvent: The previous event.
-        :type previousEvent: pythoneda.shared.Event
         :return: The resulting events.
         :rtype: List[Event]
         """
-        LicdataIac.logger().info(f"Resuming flow after: {event}")
-        LicdataIac.logger().debug(f"My events:")
-        for e in self.events:
-            LicdataIac.logger().debug({e})
-
-        if isinstance(event, InfrastructureUpdated):
-            return await self.continue_flow_after_InfrastructureUpdated(
-                event, previousEvent
-            )
+        result = []
+        if isinstance(event, CredentialIssued):
+            result = await self.continue_flow_after_CredentialIssued(event)
         elif isinstance(event, DockerImagePushed):
-            return await self.continue_flow_after_DockerImagePushed(
-                event, previousEvent
-            )
+            result = await self.continue_flow_after_DockerImagePushed(event)
         else:
-            return None
+            result = None
 
-    async def continue_flow_after_InfrastructureUpdated(
-        self, event: Event, previousEvent: Event
-    ):
+        for new_event in result:
+            self.add_event(new_event)
+
+        return result
+
+    async def continue_flow_after_CredentialIssued(self, event: Event):
         """
         Continues the flow with a new event.
         :param event: The event.
         :type event: pythoneda.shared.Event
-        :param previousEvent: The previous event.
-        :type previousEvent: pythoneda.shared.Event
+        :return: The resulting events.
+        :rtype: List[pythoneda.shared.Event]
         """
-        metadata = {
-            "credential_name": event.metadata.get("credential_name", None),
-            "docker_registry_url": event.metadata.get("docker_registry_url", None),
-        }
-        factory = Ports.instance().resolve_first(StackOperationFactory)
-        stack_operation = factory.new(
-            DockerImageDetailsRequested(
-                event.stack_name,
-                event.project_name,
-                event.location,
+        infrastructure_updated = self.find_latest_event(InfrastructureUpdated)
+        if infrastructure_updated is None:
+            LicdataIac.logger().error(
+                f"Could not find the previous InfrastructureUpdated event"
+            )
+        else:
+            metadata = {
+                "credential_name": infrastructure_updated.metadata.get(
+                    "credential_name", None
+                ),
+                "docker_registry_url": infrastructure_updated.metadata.get(
+                    "docker_registry_url", None
+                ),
+            }
+            factory = Ports.instance().resolve_first(StackOperationFactory)
+            docker_image_details_requested = DockerImageDetailsRequested(
+                infrastructure_updated.stack_name,
+                infrastructure_updated.project_name,
+                infrastructure_updated.location,
                 metadata,
                 [event.id] + event.previous_event_ids,
             )
-        )
-        result = await stack_operation.perform()
-        for event in result:
-            self.add_event(event)
+            self.add_event(docker_image_details_requested)
+            stack_operation = factory.new(docker_image_details_requested)
+            result = await stack_operation.perform()
 
+        if result is not None:
+            for event in result:
+                self.add_event(event)
         return result
 
-    async def continue_flow_after_DockerImagePushed(
-        self, event: DockerImagePushed, previousEvent: Event
-    ):
+    async def continue_flow_after_DockerImagePushed(self, event: DockerImagePushed):
         """
         Continues the flow with a new DockerImagePushed event.
         :param event: The event.
         :type event: pythoneda.shared.artifact.events.DockerImagePushed
-        :param previousEvent: The previous event.
-        :type previousEvent: pythoneda.shared.Event
+        :return: The resulting events.
+        :rtype: List[pythoneda.shared.Event]
         """
+        result = []
         infrastructure_updated = self.find_latest_event(InfrastructureUpdated)
         if infrastructure_updated is None:
-            self.__class__.logger().error(
+            LicdataIac.logger().error(
                 f"Could not find the previous InfrastructureUpdated event"
             )
         else:
-            return await self.update_docker_resources(
-                DockerResourcesUpdateRequested(
-                    infrastructure_updated.stack_name,
-                    infrastructure_updated.project_name,
-                    infrastructure_updated.location,
-                    event.image_name,
-                    event.image_version,
-                    event.image_url,
-                    [event.id] + event.previous_event_ids,
-                )
+            LicdataIac.logger().info("Requesting update of Docker resources")
+            docker_resources_update_requested = DockerResourcesUpdateRequested(
+                infrastructure_updated.stack_name,
+                infrastructure_updated.project_name,
+                infrastructure_updated.location,
+                event.image_name,
+                event.image_version,
+                event.image_url,
+                [event.id] + event.previous_event_ids,
             )
+            self.add_event(docker_resources_update_requested)
+            result = await self.update_docker_resources(
+                docker_resources_update_requested
+            )
+        if result is not None:
+            for event in result:
+                self.add_event(event)
+
+        return result
 
     async def update_docker_resources(
         self, event: DockerResourcesUpdateRequested
@@ -245,7 +255,14 @@ class LicdataIac(Flow, EventListener):
         """
         factory = Ports.instance().resolve_first(StackOperationFactory)
         stack_operation = factory.new(event)
-        return await stack_operation.perform()
+        LicdataIac.logger().debug(f"Performing {stack_operation}({event})")
+        result = await stack_operation.perform()
+        LicdataIac.logger().debug(f"{stack_operation} finished")
+
+        for event in result:
+            self.add_event(event)
+
+        return result
 
     @classmethod
     @listen(InfrastructureRemovalRequested)
@@ -256,8 +273,8 @@ class LicdataIac(Flow, EventListener):
         Gets notified of a InfrastructureRemovalRequested event.
         :param event: The event.
         :type event: org.acmsl.iac.licdata.domain.InfrastructureRemovalRequested
-        :return: A list of events.
-        :rtype: List[org.acmsl.iac.licdata.domain.Event]
+        :return: The resulting events.
+        :rtype: List[pythoneda.shared.Event]
         """
         cls.instance().add_event(event)
         cls.logger().info(
@@ -275,8 +292,8 @@ class LicdataIac(Flow, EventListener):
         Removes the infrastructure.
         :param event: The event.
         :type event: org.acmsl.iac.licdata.domain.InfrastructureRemovalRequested
-        :return: A list of events.
-        :rtype: pythoneda.shared.Event
+        :return: The resulting events.
+        :rtype: List[pythoneda.shared.Event]
         """
         factory = Ports.instance().resolve_first(StackOperationFactory)
         stack_operation = factory.new(event)
