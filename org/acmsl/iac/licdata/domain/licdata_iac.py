@@ -183,14 +183,7 @@ class LicdataIac(Flow, EventListener):
                 f"Could not find the previous InfrastructureUpdated event"
             )
         else:
-            metadata = {
-                "credential_name": infrastructure_updated.metadata.get(
-                    "credential_name", None
-                ),
-                "docker_registry_url": infrastructure_updated.metadata.get(
-                    "docker_registry_url", None
-                ),
-            }
+            metadata = infrastructure_updated.metadata.copy()
             factory = Ports.instance().resolve_first(StackOperationFactory)
             docker_image_details_requested = DockerImageDetailsRequested(
                 infrastructure_updated.stack_name,
@@ -224,6 +217,7 @@ class LicdataIac(Flow, EventListener):
             )
         else:
             LicdataIac.logger().info("Requesting update of Docker resources")
+            metadata = infrastructure_updated.metadata.copy()
             docker_resources_update_requested = DockerResourcesUpdateRequested(
                 infrastructure_updated.stack_name,
                 infrastructure_updated.project_name,
@@ -231,6 +225,7 @@ class LicdataIac(Flow, EventListener):
                 event.image_name,
                 event.image_version,
                 event.image_url,
+                metadata,
                 [event.id] + event.previous_event_ids,
             )
             self.add_event(docker_resources_update_requested)
