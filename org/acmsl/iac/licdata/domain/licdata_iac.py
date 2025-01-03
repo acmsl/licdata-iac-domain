@@ -23,10 +23,7 @@ from pythoneda.shared import Event, EventEmitter, EventListener, Flow, listen, P
 from pythoneda.shared.artifact.events import DockerImagePushed
 from pythoneda.shared.iac.events import (
     DockerImageDetailsRequested,
-    DockerResourcesRemovalRequested,
-    DockerResourcesRemoved,
     DockerResourcesUpdateRequested,
-    DockerResourcesUpdated,
     InfrastructureRemovalRequested,
     InfrastructureRemoved,
     InfrastructureUpdateRequested,
@@ -104,6 +101,7 @@ class LicdataIac(Flow, EventListener):
                 await stack_operation.retrieve_container_registry_credentials()
             )
             prev_event = followUp[-1]
+            print(f"****** Received credentials: {credentials}")
             credential_issued = CredentialIssued(
                 credentials.get("credential_name", None),
                 credentials.get("credential_password", None),
@@ -177,24 +175,33 @@ class LicdataIac(Flow, EventListener):
         :return: The resulting events.
         :rtype: List[pythoneda.shared.Event]
         """
+        result = None
         infrastructure_updated = self.find_latest_event(InfrastructureUpdated)
         if infrastructure_updated is None:
             LicdataIac.logger().error(
                 f"Could not find the previous InfrastructureUpdated event"
             )
         else:
-            metadata = infrastructure_updated.metadata.copy()
-            factory = Ports.instance().resolve_first(StackOperationFactory)
-            docker_image_details_requested = DockerImageDetailsRequested(
-                infrastructure_updated.stack_name,
-                infrastructure_updated.project_name,
-                infrastructure_updated.location,
-                metadata,
-                [event.id] + event.previous_event_ids,
-            )
-            self.add_event(docker_image_details_requested)
-            stack_operation = factory.new(docker_image_details_requested)
-            result = await stack_operation.perform()
+            credential_issued = self.find_latest_event(CredentialIssued)
+            if credential_issued is None:
+                LicdataIac.logger().error(
+                    f"Could not find the previous CredentialIssued event"
+                )
+            else:
+                metadata = infrastructure_updated.metadata.copy()
+                metadata.update(credential_issued.metadata)
+                metadata["credential_name"] = credential_issued.name
+                factory = Ports.instance().resolve_first(StackOperationFactory)
+                docker_image_details_requested = DockerImageDetailsRequested(
+                    infrastructure_updated.stack_name,
+                    infrastructure_updated.project_name,
+                    infrastructure_updated.location,
+                    metadata,
+                    [event.id] + event.previous_event_ids,
+                )
+                self.add_event(docker_image_details_requested)
+                stack_operation = factory.new(docker_image_details_requested)
+                result = await stack_operation.perform()
 
         if result is not None:
             for event in result:
@@ -216,7 +223,6 @@ class LicdataIac(Flow, EventListener):
                 f"Could not find the previous InfrastructureUpdated event"
             )
         else:
-            LicdataIac.logger().info("Requesting update of Docker resources")
             metadata = infrastructure_updated.metadata.copy()
             docker_resources_update_requested = DockerResourcesUpdateRequested(
                 infrastructure_updated.stack_name,
@@ -250,9 +256,7 @@ class LicdataIac(Flow, EventListener):
         """
         factory = Ports.instance().resolve_first(StackOperationFactory)
         stack_operation = factory.new(event)
-        LicdataIac.logger().debug(f"Performing {stack_operation}({event})")
         result = await stack_operation.perform()
-        LicdataIac.logger().debug(f"{stack_operation} finished")
 
         for event in result:
             self.add_event(event)
@@ -272,9 +276,6 @@ class LicdataIac(Flow, EventListener):
         :rtype: List[pythoneda.shared.Event]
         """
         cls.instance().add_event(event)
-        cls.logger().info(
-            f"Infrastructure removal for {event.project_name}/{event.stack_name} at {event.location} requested"
-        )
         result = await cls.instance().remove_infrastructure(event)
         for event in result:
             cls.instance().add_event(event)
