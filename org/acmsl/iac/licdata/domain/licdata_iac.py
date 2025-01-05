@@ -261,6 +261,12 @@ class LicdataIac(Flow, EventListener):
         for event in result:
             self.add_event(event)
 
+        dockerResourcesUpdated = self.find_latest_event(DockerResourcesUpdateRequested)
+        if dockerResourcesUpdated is not None:
+            LicdataIac.logger().info(
+                f"Lidata API available at: {dockerResourcesUpdated.metadata.get('api_domain', None)}"
+            )
+
         return result
 
     @classmethod
